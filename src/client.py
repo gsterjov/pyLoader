@@ -74,8 +74,12 @@ class Client (object):
 	
 	on_connected = None
 	on_disconnected = None
+
 	on_queue_added = None
-	on_collected_added = None
+	on_queue_removed = None
+	on_collector_added = None
+	on_collector_removed = None
+	on_finished_added = None
 
 	on_link_check = None
 	
@@ -88,8 +92,13 @@ class Client (object):
 		
 		self.on_connected = Event()
 		self.on_disconnected = Event()
+
 		self.on_queue_added = Event()
+		self.on_queue_removed = Event()
 		self.on_collector_added = Event()
+		self.on_collector_removed = Event()
+		self.on_finished_added = Event()
+
 		self.on_link_check = Event()
 		
 		# set all live properties in this class for polling
@@ -102,7 +111,7 @@ class Client (object):
 		
 		self._queue_cache = {}
 		self._collector_cache = {}
-
+		self._finished_cache = {}
 		self._online_check_cache = {}
 	
 
@@ -288,6 +297,12 @@ class Client (object):
 		return packages
 
 
+	def queue_package (self, package):
+		'''
+		Adds the specified package to the queue
+		'''
+		self.client.pushToQueue (package.id)
+
 
 	def check_online_status (self, links):
 		'''
@@ -314,8 +329,11 @@ class Client (object):
 		Poll the backend queue for new packages or changes to existing ones
 		'''
 		queue = self.client.getQueue()
+		ids = []
 		
 		for item in queue:
+			ids.append (item.pid)
+
 			# update package
 			if self._queue_cache.has_key (item.pid):
 				pass
@@ -326,6 +344,13 @@ class Client (object):
 				self._queue_cache[item.pid] = package
 				self.on_queue_added (package)
 		
+
+		# remove packages from the cache
+		for package_id, package in self._queue_cache.items():
+			if not package_id in ids:
+				self.on_queue_removed (package)
+				del self._queue_cache[package_id]
+		
 		return True
 
 
@@ -334,10 +359,17 @@ class Client (object):
 		Poll the backend collector for new packages or changes to existing ones
 		'''
 		collector = self.client.getCollector()
+		ids = []
 		
+		# add packages to the cache
 		for item in collector:
+			ids.append (item.pid)
+
 			# update package
 			if self._collector_cache.has_key (item.pid):
+				pass
+
+			elif self._finished_cache.has_key (item.pid):
 				pass
 			
 			# add package
@@ -346,11 +378,20 @@ class Client (object):
 
 				# pyload puts finished packages back into the collector for some reason
 				if package.finished:
-					pass
+					self._finished_cache[item.pid] = package
+					self.on_finished_added (package)
+
 				else:
 					self._collector_cache[item.pid] = package
 					self.on_collector_added (package)
 		
+
+		# remove packages from the cache
+		for package_id, package in self._collector_cache.items():
+			if not package_id in ids:
+				self.on_collector_removed (package)
+				del self._collector_cache[package_id]
+
 		return True
 
 

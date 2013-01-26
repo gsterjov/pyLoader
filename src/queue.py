@@ -83,6 +83,7 @@ class Queue (object):
 		
 		# connect to server events
 		client.on_queue_added += self.__on_queue_added
+		client.on_finished_added += self.__on_finished_added
 	
 	
 	
@@ -247,6 +248,16 @@ class Queue (object):
 	def __on_queue_added (self, package):
 		'''
 		Handler to show newly added packages from the server
+		'''
+		parent = self.store.append (None, [package, 0, 0, 0, 0])
+		
+		for link in package.links:
+			self.store.append (parent, [link, 0, 0, 0, 0])
+	
+	
+	def __on_finished_added (self, package):
+		'''
+		Handler to show newly finished packages from the server
 		'''
 		parent = self.store.append (None, [package, 0, 0, 0, 0])
 		

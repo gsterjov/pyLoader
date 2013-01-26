@@ -106,10 +106,10 @@ class MainWindow (object):
 		self.show_connect_window()
 	
 	def __on_start_clicked (self, button):
-		pass
+		self.client.resume()
 	
 	def __on_stop_clicked (self, button):
-		pass
+		self.client.pause()
 	
 	def __on_check_clicked (self, button):
 		self.collector.check_all_items()

@@ -41,6 +41,9 @@ class Collector (object):
 		self.client = client
 
 		self.collector_tree = builder.get_object ("collector_tree")
+		self.package_menu = builder.get_object ("collector_package_menu")
+
+		menu_item_add = builder.get_object ("collector_package_add")
 		
 		# columns
 		link = builder.get_object ("collector_link")
@@ -76,7 +79,11 @@ class Collector (object):
 		self.package_ctx.set_path (path)
 		self.package_ctx.add_class (Gtk.STYLE_CLASS_INFO)
 		
-		
+
+		# connect to ui events
+		self.collector_tree.connect ("button-press-event", self.__on_button_press)
+		menu_item_add.connect ("activate", self.__on_add_to_queue)
+
 		# connect to server events
 		client.on_collector_added += self.__on_collector_added
 		client.on_link_check += self.__on_link_check
@@ -205,3 +212,31 @@ class Collector (object):
 		Handler to update the status of links being checked
 		'''
 		self.collector_tree.queue_draw()
+
+
+
+	def __on_button_press (self, widget, event):
+		'''
+		Handler to show the popup menu in the collector
+		'''
+		if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:
+			# get the current selection to determine which popup to use
+			selection = self.collector_tree.get_selection()
+			model, iter = selection.get_selected()
+
+			if model[iter][0].is_package:
+				self.package_menu.popup (None, None, None, None, event.button, event.time)
+
+		return False
+
+
+	def __on_add_to_queue (self, userdata):
+		'''
+		Handler to move items in the collector to the queue
+		'''
+		selection = self.collector_tree.get_selection()
+		model, iter = selection.get_selected()
+
+		if iter != None:
+			package = model[iter][0]
+			self.client.queue_package (package)
