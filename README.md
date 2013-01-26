@@ -1,4 +1,4 @@
-pyLoadGtk
+pyLoader
 =========
 
-A pyGTK GUI for the pyload download manager
+A GTK+3 GUI for the pyload download manager
