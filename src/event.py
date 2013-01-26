@@ -16,38 +16,38 @@
 #    along with pyLoadGtk.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-class Event(object):
+class Event (object):
 	'''
 	classdocs
 	'''
 
 
-	def __init__(self):
+	def __init__ (self):
 		'''
 		Constructor
 		'''
 		self.handlers = set()
 	
 	
-	def register(self, handler):
-		self.handlers.add(handler)
+	def attach (self, handler):
+		self.handlers.add (handler)
 		return self
 	
 	
-	def unregister(self, handler):
+	def detach (self, handler):
 		try:
-			self.handlers.remove(handler)
+			self.handlers.remove (handler)
 		except:
 			pass
 		
 		return self
 	
 	
-	def fire(self, *args, **kargs):
+	def fire (self, *args, **kargs):
 		for func in self.handlers:
-			func(*args, **kargs)
+			func (*args, **kargs)
 	
 	
-	__iadd__ = register
-	__isub__ = unregister
+	__iadd__ = attach
+	__isub__ = detach
 	__call__  = fire

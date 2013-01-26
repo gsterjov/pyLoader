@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+	<schema id="org.pyLoader" path="/org/pyLoader/">
+		<key type="s" name="host">
+			<default>"localhost"</default>
+			<summary>The pyLoadCore server address</summary>
+			<description>This is the saved pyLoad server address to connect to once the client loads up.</description>
+		</key>
+		<key type="u" name="port">
+			<default>7227</default>
+			<summary>The pyLoadCore server port</summary>
+			<description>This is the saved pyLoad server port to connect to once the client loads up.</description>
+		</key>
+		<key type="b" name="autoconnect">
+			<default>false</default>
+			<summary>Automatically connect on startup</summary>
+			<description>Whether or not to connect to the saved pyLoad server when the app loads up.</description>
+		</key>
+	</schema>
+</schemalist>

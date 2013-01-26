@@ -17,7 +17,7 @@
 #
 
 from gi.repository import Gtk
-from module.remote.thriftbackend.ThriftClient import ThriftClient, WrongLogin
+from backend.ThriftClient import ThriftClient, WrongLogin
 
 from server import Server
 

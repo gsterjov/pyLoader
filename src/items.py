@@ -1,51 +1,50 @@
 #
 #    Copyright 2012 Goran Sterjov
-#    This file is part of pyLoadGtk.
+#    This file is part of pyLoader.
 #
-#    pyLoadGtk is free software: you can redistribute it and/or modify
+#    pyLoader is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
 #
-#    pyLoadGtk is distributed in the hope that it will be useful,
+#    pyLoader is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU General Public License for more details.
 #
 #    You should have received a copy of the GNU General Public License
-#    along with pyLoadGtk.  If not, see <http://www.gnu.org/licenses/>.
+#    along with pyLoader.  If not, see <http://www.gnu.org/licenses/>.
 #
 
 from gi.repository import GObject
-from module.remote.thriftbackend import ThriftClient
+
+from pyload.ttypes import DownloadStatus
 
 
-class Item(GObject.Object):
+class Item (GObject.Object):
 	'''
-	classdocs
+	A queue item that can either be a package or a link
 	'''
-	
-	def __init__(self, is_package=False, is_link=False):
+	def __init__ (self, is_package=False, is_link=False):
 		'''
 		Constructor
 		'''
-		GObject.Object.__init__(self)
+		GObject.Object.__init__ (self)
 		
 		self.is_package = is_package
 		self.is_link = is_link
 
 
 
-class Package(Item):
+class Package (Item):
 	'''
-	classdocs
+	A package contains links to be downloaded within the same folder
 	'''
-
-	def __init__(self, client, data):
+	def __init__ (self, client, data):
 		'''
 		Constructor
 		'''
-		Item.__init__(self, is_package=True)
+		Item.__init__ (self, is_package=True)
 		
 		self.client = client
 		
@@ -61,59 +60,110 @@ class Package(Item):
 		self.links_total = data.linkstotal
 		self.size_done = data.sizedone
 		self.size_total = data.sizetotal
-		
+
+		self.links = []
 		self.update_links()
 	
 	
-	def update_links(self):
+	def update_links (self):
 		self.links = []
 		
-		data = self.client.getPackageData(self.id)
+		data = self.client.getPackageData (self.id)
 		
 		for link in data.links:
-			self.links.append(Link(self.client, link))
+			self.links.append (Link (link))
+
+
+	@property
+	def finished (self):
+		return self.links_done == self.links_total
+
+
+	@property
+	def links_online (self):
+		online = 0
+		for link in self.links:
+			if link.status == Link.Status.ONLINE:
+				online += 1
+				
+		return online
+	
+	
+	def __repr__ (self):
+		return "<Package id: {0}, name: {1}>".format (self.id, self.name)
 
 
 
-class Link(Item):
+class Link (Item):
 	'''
-	classdocs
+	A link to a file to be downloaded
 	'''
 
-	class Status(object):
+	class Status (object):
 		'''
-		classdocs
+		The various states that a link can find itself in
 		'''
-		STARTING		= ThriftClient.DownloadStatus.Starting
-		DECRYPTING		= ThriftClient.DownloadStatus.Decrypting
-		PROCESSING		= ThriftClient.DownloadStatus.Processing
-		ONLINE			= ThriftClient.DownloadStatus.Online
-		OFFLINE			= ThriftClient.DownloadStatus.Offline
-		QUEUED			= ThriftClient.DownloadStatus.Queued
-		SKIPPED			= ThriftClient.DownloadStatus.Skipped
-		WAITING			= ThriftClient.DownloadStatus.Waiting
-		DOWNLOADING		= ThriftClient.DownloadStatus.Downloading
-		FAILED			= ThriftClient.DownloadStatus.Failed
-		ABORTED			= ThriftClient.DownloadStatus.Aborted
-		FINISHED		= ThriftClient.DownloadStatus.Finished
-		TEMP_OFFLINE	= ThriftClient.DownloadStatus.TempOffline
-		CUSTOM			= ThriftClient.DownloadStatus.Custom
-		UNKNOWN			= ThriftClient.DownloadStatus.Unknown
-
-
-	def __init__(self, client, data):
+		STARTING		= DownloadStatus.Starting
+		DECRYPTING		= DownloadStatus.Decrypting
+		PROCESSING		= DownloadStatus.Processing
+		ONLINE			= DownloadStatus.Online
+		OFFLINE			= DownloadStatus.Offline
+		QUEUED			= DownloadStatus.Queued
+		SKIPPED			= DownloadStatus.Skipped
+		WAITING			= DownloadStatus.Waiting
+		DOWNLOADING		= DownloadStatus.Downloading
+		FAILED			= DownloadStatus.Failed
+		ABORTED			= DownloadStatus.Aborted
+		FINISHED		= DownloadStatus.Finished
+		TEMP_OFFLINE	= DownloadStatus.TempOffline
+		CUSTOM			= DownloadStatus.Custom
+		UNKNOWN			= DownloadStatus.Unknown
+		
+		_STATUS_STR = {
+			STARTING: "Starting",
+			DECRYPTING: "Decrypting",
+			PROCESSING: "Processing",
+			ONLINE: "Online",
+			OFFLINE: "Offline",
+			QUEUED: "Queued",
+			SKIPPED: "Skipped",
+			WAITING: "Waiting",
+			DOWNLOADING: "Downloading",
+			FAILED: "Failed",
+			ABORTED: "Aborted",
+			FINISHED: "Finished",
+			TEMP_OFFLINE: "Temporarily Offline",
+			CUSTOM: "Custom",
+			UNKNOWN: "Unknown",
+		}
+		
+		def __init__ (self, status):
+			self.status = status
+		
+		@property
+		def value (self):
+			return self._STATUS_STR[self.status]
+		
+		def __eq__ (self, other):
+			return self.status == other
+	
+	
+	def __init__ (self, data):
 		'''
 		Constructor
 		'''
-		Item.__init__(self, is_link=True)
-		
-		self.client = client
-		
+		Item.__init__ (self, is_link=True)
+
 		self.id = data.fid
 		self.url = data.url
 		self.name = data.name
 		self.plugin = data.plugin
 		self.size = data.size
 		self.order = data.order
-		self.status = data.status
+		self.status = Link.Status (data.status)
 		self.error = data.error
+	
+	
+	def __repr__ (self):
+		return "<Link id: {0}, name: {1}, url: {2}, size: {3}, status: {4}>".format(
+			self.id, self.name, self.url, self.size, self.status)
