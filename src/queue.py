@@ -51,36 +51,17 @@ class Queue (object):
 		self.store = Gtk.TreeStore (Item.__gtype__, int, int, int, int)
 		self.queue_tree.set_model (self.store)
 		
-		area = link.get_area()
-		area.set_orientation (Gtk.Orientation.VERTICAL)
-		
 		# create renderers
 		name_renderer = Gtk.CellRendererText()
-		status_renderer = Gtk.CellRendererText()
-		progress_renderer = Gtk.CellRendererProgress()
 		host_renderer = Gtk.CellRendererText()
 		
 		# set column renderers
 		link.pack_start (name_renderer, True)
-		link.pack_start (progress_renderer, True)
-		link.pack_start (status_renderer, True)
 		host.pack_start (host_renderer, True)
 		
 		link.set_cell_data_func (name_renderer, self.__render_name)
-		link.set_cell_data_func (progress_renderer, self.__render_progress)
-		link.set_cell_data_func (status_renderer, self.__render_status)
 		host.set_cell_data_func (host_renderer, self.__render_host)
-		
-		
-		# get colours
-		path = Gtk.WidgetPath()
-		path.append_type (Gtk.WindowType)
-		
-		self.package_ctx = Gtk.StyleContext()
-		self.package_ctx.set_path (path)
-		self.package_ctx.add_class (Gtk.STYLE_CLASS_INFO)
-		
-		
+
 		# connect to server events
 		client.on_queue_added += self.__on_queue_added
 		client.on_finished_added += self.__on_finished_added
@@ -128,21 +109,43 @@ class Queue (object):
 		
 		# render as a link
 		elif item.is_link:
+			# get the state of the link
+			status = "<b>{0}</b>".format (item.status.value)
+
 			# get the link size and assume no bytes have been transfered
 			size = utils.format_size (item.size)
 			details = "[{0}]".format (size)
 			
-			# item is downloading so get current bytes transferred
+			# link is downloading
 			if item.status == Link.Status.DOWNLOADING:
+				# get the current bytes transferred
 				bytes_left = self.store[iter][Queue.Columns.BYTES_LEFT]
 				seconds_left = model[iter][Queue.Columns.ETA]
+
+				# get the current speed
+				speed = model[iter][Queue.Columns.SPEED]
+				speed = utils.format_size (speed)
 				
 				transfered = utils.format_size (item.size - bytes_left)
 				eta = utils.format_time (seconds_left)
-				details = "[{0} of {1}]  -  {2}".format (transfered, size, eta)
+
+				details = "[{0} of {1} at {2}/s]  -  {3}".format (transfered, size, eta)
+
+			# link is pending some action
+			elif item.status == Link.Status.WAITING:
+				# get the current wait time
+				seconds = model[iter][Queue.Columns.WAIT_UNTIL]
+				wait_time = utils.format_time (seconds - time())
+				
+				details = "[{0}]  -  {1} left".format (size, wait_time)
+			
+			# link has failed
+			elif item.status == Link.Status.FAILED:
+				details = "[{0}]  -  {1}".format (size, item.error)
+
 			
 			# render link details as markup and make it visible
-			text = "{0}<small>  -  {1}</small>".format (item.name, details)
+			text = "<small>{0}  -  {1}  -  {2}</small>".format (item.name, status, details)
 			cell.set_property ("markup", text)
 			cell.set_property ("visible", True)
 		
@@ -254,7 +257,7 @@ class Queue (object):
 		for link in package.links:
 			self.store.append (parent, [link, 0, 0, 0, 0])
 	
-	
+
 	def __on_finished_added (self, package):
 		'''
 		Handler to show newly finished packages from the server
@@ -263,57 +266,3 @@ class Queue (object):
 		
 		for link in package.links:
 			self.store.append (parent, [link, 0, 0, 0, 0])
-	
-	
-	def update_status (self, server):
-		downloads = server.get_downloads()
-		
-		for download in downloads:
-			#print download
-			link_iter = self.__get_link_iter (download.fid)
-			
-			self.store.set_value (link_iter, Queue.Columns.SPEED, download.speed)
-			self.store.set_value (link_iter, Queue.Columns.ETA, download.eta)
-			self.store.set_value (link_iter, Queue.Columns.BYTES_LEFT, download.bleft)
-			self.store.set_value (link_iter, Queue.Columns.WAIT_UNTIL, download.wait_until)
-	
-	
-	def check_all_online (self, server):
-		'''
-		Check all links in the queue for their current online state
-		'''
-		links = []
-		package_iter = self.store.get_iter_first()
-		
-		# get all packages
-		while package_iter != None:
-			# get all links in the package
-			link_iter = self.store.iter_children (package_iter)
-			
-			while link_iter != None:
-				item = self.store[link_iter][Queue.Columns.ITEM]
-				
-				# ignore links that are in a status assumed to be online
-				if item.status not in [Link.Status.DOWNLOADING, Link.Status.FINISHED, Link.Status.WAITING]:
-					links.append (item)
-				
-				# go to the next link in the package
-				link_iter = self.store.iter_next (link_iter)
-			
-			# go to the next package in the queue
-			package_iter = self.store.iter_next (package_iter)
-		
-		# add the links to the server online check job
-		server.check_online_status (links)
-	
-	
-	def add_package (self, package):
-		pass
-	
-	
-	def load_queue (self, server):
-		for package in server.get_queue():
-			parent = self.store.append (None, [package, 0, 0, 0, 0])
-			
-			for link in package.links:
-				self.store.append (parent, [link, 0, 0, 0, 0])

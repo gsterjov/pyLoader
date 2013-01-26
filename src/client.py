@@ -81,7 +81,7 @@ class Client (object):
 	on_collector_removed = None
 	on_finished_added = None
 
-	on_link_check = None
+	on_link_checked = None
 	
 	
 	def __init__ (self):
@@ -99,7 +99,7 @@ class Client (object):
 		self.on_collector_removed = Event()
 		self.on_finished_added = Event()
 
-		self.on_link_check = Event()
+		self.on_link_checked = Event()
 		
 		# set all live properties in this class for polling
 		self.properties_to_poll = [
@@ -283,7 +283,7 @@ class Client (object):
 		self.client.unpauseServer()
 	
 	
-	@live_property
+	@property
 	@login_required
 	def queue (self):
 		'''
@@ -435,7 +435,7 @@ class Client (object):
 			link.plugin = result.plugin
 			link.status = Link.Status (result.status)
 
-		self.on_link_check ()
+		self.on_link_checked ()
 
 		if results.rid == -1:
 			del self._online_check_cache[rid]

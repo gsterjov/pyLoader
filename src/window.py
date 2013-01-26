@@ -46,6 +46,7 @@ class MainWindow (object):
 		# create ui components
 		self.queue = Queue (builder, self.client)
 		self.collector = Collector (builder, self.client)
+
 		self.connect_window = ConnectWindow (self.client)
 		self.connect_window.window.set_transient_for (self.window)
 		

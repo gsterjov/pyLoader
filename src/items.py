@@ -85,8 +85,18 @@ class Package (Item):
 		for link in self.links:
 			if link.status == Link.Status.ONLINE:
 				online += 1
-				
+
 		return online
+
+
+	@property
+	def links_offline (self):
+		offline = 0
+		for link in self.links:
+			if link.status in [Link.Status.OFFLINE, Link.Status.TEMP_OFFLINE]:
+				offline += 1
+				
+		return offline
 	
 	
 	def __repr__ (self):

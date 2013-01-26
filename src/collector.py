@@ -29,11 +29,6 @@ class Collector (object):
 	The collector queue
 	'''
 
-	class Columns:
-		(ITEM,
-		WAIT_UNTIL) = range(2)
-
-
 	def __init__ (self, builder, client):
 		'''
 		Constructor
@@ -50,35 +45,19 @@ class Collector (object):
 		host = builder.get_object ("collector_host")
 		
 		# create the item store (packages and links)
-		self.store = Gtk.TreeStore (Item.__gtype__, int)
+		self.store = Gtk.TreeStore (Item.__gtype__)
 		self.collector_tree.set_model (self.store)
-		
-		area = link.get_area()
-		area.set_orientation (Gtk.Orientation.VERTICAL)
 		
 		# create renderers
 		name_renderer = Gtk.CellRendererText()
-		status_renderer = Gtk.CellRendererText()
 		host_renderer = Gtk.CellRendererText()
 		
 		# set column renderers
 		link.pack_start (name_renderer, True)
-		link.pack_start (status_renderer, True)
 		host.pack_start (host_renderer, True)
 		
 		link.set_cell_data_func (name_renderer, self.__render_name)
-		link.set_cell_data_func (status_renderer, self.__render_status)
 		host.set_cell_data_func (host_renderer, self.__render_host)
-		
-		
-		# get colours
-		path = Gtk.WidgetPath()
-		path.append_type (Gtk.WindowType)
-		
-		self.package_ctx = Gtk.StyleContext()
-		self.package_ctx.set_path (path)
-		self.package_ctx.add_class (Gtk.STYLE_CLASS_INFO)
-		
 
 		# connect to ui events
 		self.collector_tree.connect ("button-press-event", self.__on_button_press)
@@ -86,7 +65,7 @@ class Collector (object):
 
 		# connect to server events
 		client.on_collector_added += self.__on_collector_added
-		client.on_link_check += self.__on_link_check
+		client.on_link_checked += self.__on_link_checked
 
 
 
@@ -115,7 +94,8 @@ class Collector (object):
 		if item.is_package:
 			if item.links_online == item.links_total:
 				cell.set_property ("cell-background-rgba", Gdk.RGBA(0.5, 1, 0.2, 0.4))
-			else:
+				
+			elif item.links_offline > 0:
 				cell.set_property ("cell-background-rgba", Gdk.RGBA(1, 0.2, 0, 0.3))
 			
 			cell.set_property ("cell-background-set", True)
@@ -129,15 +109,11 @@ class Collector (object):
 			elif item.status in [Link.Status.OFFLINE, Link.Status.TEMP_OFFLINE]:
 				cell.set_property ("cell-background-rgba", Gdk.RGBA(1, 0.2, 0, 0.3))
 				cell.set_property ("cell-background-set", True)
-			
-			elif item.status in [Link.Status.WAITING]:
-				cell.set_property ("cell-background-rgba", Gdk.RGBA(1, 1, 0, 0.5))
-				cell.set_property ("cell-background-set", True)
 	
 	
 	def __render_name (self, column, cell, model, iter, data):
 		# get the item we are dealing with
-		item = model[iter][Collector.Columns.ITEM]
+		item = model[iter][0]
 		
 		# render as a package
 		if item.is_package:
@@ -145,48 +121,26 @@ class Collector (object):
 		
 		# render as a link
 		elif item.is_link:
+			# get the state of the link
+			status = "<b>{0}</b>".format (item.status.value)
+
 			# get the link size and assume no bytes have been transfered
 			size = utils.format_size (item.size)
 			details = "[{0}]".format (size)
+
+			if item.status in [Link.Status.OFFLINE, Link.Status.TEMP_OFFLINE]:
+				details = item.error
 			
 			# render link details as markup and make it visible
-			text = "{0}<small>  -  {1}</small>".format (item.name, details)
+			text = "<small>{0}  -  {1}  -  {2}</small>".format (item.name, status, details)
 			cell.set_property ("markup", text)
 			cell.set_property ("visible", True)
 		
 		self.__set_cell_background (cell, item)
 	
-	
-	def __render_status (self, column, cell, model, iter, data):
-		# get the item we are dealing with
-		item = model[iter][Collector.Columns.ITEM]
-		
-		# set it to invisible so it doesnt render for packages
-		cell.set_property ("visible", False)
-		
-		if item.is_link:
-			# get the state of the link
-			text = "<b>{0}</b>".format (item.status.value)
-			
-			if item.status == Link.Status.WAITING:
-				# get the current wait time
-				seconds = model[iter][Queue.Columns.WAIT_UNTIL]
-				wait_time = utils.format_time (seconds - time())
-				
-				text += "  -  {0} left".format (wait_time)
-			
-			elif item.status in [Link.Status.OFFLINE, Link.Status.TEMP_OFFLINE]:
-				text += "  -  {0}".format (item.error)
-			
-			# render the status and make it visible
-			cell.set_property ("markup", "<small>{0}</small>".format (text))
-			cell.set_property ("visible", True)
-			
-		self.__set_cell_background (cell, item)
-	
-	
+
 	def __render_host (self, column, cell, model, iter, data):
-		item = model[iter][Collector.Columns.ITEM]
+		item = model[iter][0]
 		
 		if item.is_package:
 			cell.set_property ("markup", "<small>{0}/{1} online</small>".format (item.links_online, item.links_total))
@@ -201,13 +155,13 @@ class Collector (object):
 		'''
 		Handler to show newly added packages from the server
 		'''
-		parent = self.store.append (None, [package, 0])
+		parent = self.store.append (None, [package])
 		
 		for link in package.links:
-			self.store.append (parent, [link, 0])
+			self.store.append (parent, [link])
 	
 
-	def __on_link_check (self):
+	def __on_link_checked (self):
 		'''
 		Handler to update the status of links being checked
 		'''
