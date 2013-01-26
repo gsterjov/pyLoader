@@ -65,6 +65,7 @@ class Collector (object):
 
 		# connect to server events
 		client.on_collector_added += self.__on_collector_added
+		client.on_collector_removed += self.__on_collector_removed
 		client.on_link_checked += self.__on_link_checked
 
 
@@ -94,7 +95,7 @@ class Collector (object):
 		if item.is_package:
 			if item.links_online == item.links_total:
 				cell.set_property ("cell-background-rgba", Gdk.RGBA(0.5, 1, 0.2, 0.4))
-				
+
 			elif item.links_offline > 0:
 				cell.set_property ("cell-background-rgba", Gdk.RGBA(1, 0.2, 0, 0.3))
 			
@@ -160,6 +161,20 @@ class Collector (object):
 		for link in package.links:
 			self.store.append (parent, [link])
 	
+	
+	def __on_collector_removed (self, package):
+		'''
+		Handler to removed packages from the server
+		'''
+		iters = []
+
+		for row in self.store:
+			if package.id == row[0].id:
+				iters.append (row.iter)
+
+		for iter in iters:
+			self.store.remove (iter)
+
 
 	def __on_link_checked (self):
 		'''
