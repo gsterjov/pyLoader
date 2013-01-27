@@ -27,7 +27,7 @@ from thrift.protocol.TBinaryProtocol import TBinaryProtocol
 from event import Event
 from live_property import live_property
 
-from items import Package, Link
+from items import Package, Link, ActiveLink
 
 
 
@@ -77,10 +77,13 @@ class Client (object):
 
 	on_queue_added = None
 	on_queue_removed = None
+	on_active_added = None
+	on_active_removed = None
 	on_collector_added = None
 	on_collector_removed = None
 	on_finished_added = None
 
+	on_active_changed = None
 	on_link_checked = None
 	
 	
@@ -95,10 +98,13 @@ class Client (object):
 
 		self.on_queue_added = Event()
 		self.on_queue_removed = Event()
+		self.on_active_added = Event()
+		self.on_active_removed = Event()
 		self.on_collector_added = Event()
 		self.on_collector_removed = Event()
 		self.on_finished_added = Event()
 
+		self.on_active_changed = Event()
 		self.on_link_checked = Event()
 		
 		# set all live properties in this class for polling
@@ -110,6 +116,7 @@ class Client (object):
 		]
 		
 		self._queue_cache = {}
+		self._active_cache = {}
 		self._collector_cache = {}
 		self._finished_cache = {}
 		self._online_check_cache = {}
@@ -354,6 +361,28 @@ class Client (object):
 		return True
 
 
+	def poll_active (self):
+		'''
+		Poll the backed for the status of all active downloads
+		'''
+		active = self.client.statusDownloads()
+
+		for item in active:
+			# update link
+			if self._active_cache.has_key (item.fid):
+				self._update_active_cache (item)
+				self.on_active_changed()
+
+			# add link
+			else:
+				link = ActiveLink()
+				self._active_cache[item.fid] = link
+				self._update_active_cache (item)
+				self.on_active_added (link)
+
+		return True
+
+
 	def poll_collector (self):
 		'''
 		Poll the backend collector for new packages or changes to existing ones
@@ -413,11 +442,27 @@ class Client (object):
 			prop.update()
 		
 		self.poll_queue()
+		self.poll_active()
 		self.poll_collector()
 		self.poll_online_checks()
 		
 		return True
 
+
+
+	def _update_active_cache (self, status):
+		'''
+		Helper method to process the active download status and update
+		the associated items and cache
+		'''
+		link = self._active_cache[status.fid]
+
+		link.id = status.fid
+		link.size = status.size
+		link.speed = status.speed
+		link.bytes_left = status.bleft
+		link.eta = status.eta
+		link.wait_time = status.wait_until
 
 
 	def _update_online_check_cache (self, rid, results):

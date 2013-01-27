@@ -34,7 +34,7 @@ def format_size (bytes):
 	return '{0:.1f} {1}'.format (float(bytes) / float(factor), suffix)
 
 
-def format_time(self, seconds):
+def format_time(seconds):
 	'''
 	Format the specified time (seconds) into a human readable value
 	'''

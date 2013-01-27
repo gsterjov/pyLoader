@@ -94,7 +94,7 @@ class Collector (object):
 		# packages
 		if item.is_package:
 			if item.links_online == item.links_total:
-				cell.set_property ("cell-background-rgba", Gdk.RGBA(0.5, 1, 0.2, 0.4))
+				cell.set_property ("cell-background-rgba", Gdk.RGBA(0.5, 1, 0.2, 0.3))
 
 			elif item.links_offline > 0:
 				cell.set_property ("cell-background-rgba", Gdk.RGBA(1, 0.2, 0, 0.3))

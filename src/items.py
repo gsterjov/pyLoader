@@ -97,6 +97,15 @@ class Package (Item):
 				offline += 1
 				
 		return offline
+
+	@property
+	def links_downloading (self):
+		downloading = 0
+		for link in self.links:
+			if link.status == Link.Status.DOWNLOADING:
+				downloading += 1
+
+		return downloading
 	
 	
 	def __repr__ (self):
@@ -172,8 +181,40 @@ class Link (Item):
 		self.order = data.order
 		self.status = Link.Status (data.status)
 		self.error = data.error
+
+
+	@property
+	def bytes_transferred (self):
+		return self.size - self.bytes_left
 	
 	
 	def __repr__ (self):
 		return "<Link id: {0}, name: {1}, url: {2}, size: {3}, status: {4}>".format(
 			self.id, self.name, self.url, self.size, self.status)
+
+
+
+class ActiveLink (Item):
+	'''
+	A link currently being downloaded
+	'''
+
+	def __init__ (self):
+		Item.__init__ (self, is_link=True)
+
+		self.id = 0
+		self.size = 0
+		self.speed = 0
+		self.bytes_left = 0
+		self.eta = 0
+		self.wait_time = 0
+
+
+	@property
+	def bytes_transferred (self):
+		return self.size - self.bytes_left
+	
+	
+	def __repr__ (self):
+		return "<ActiveLink id: {0}, size: {1}, speed: {2}, bytes_left: {3}, eta: {4}, wait_time: {5}>".format(
+			self.id, self.size, self.speed, self.bytes_left, self.eta, self.wait_time)
