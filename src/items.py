@@ -208,6 +208,7 @@ class ActiveLink (Item):
 		self.bytes_left = 0
 		self.eta = 0
 		self.wait_time = 0
+		self.percent = 0
 
 
 	@property

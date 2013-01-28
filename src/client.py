@@ -463,6 +463,7 @@ class Client (object):
 		link.bytes_left = status.bleft
 		link.eta = status.eta
 		link.wait_time = status.wait_until
+		link.percent = status.percent
 
 
 	def _update_online_check_cache (self, rid, results):

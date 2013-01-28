@@ -23,6 +23,7 @@ from connect_window import ConnectWindow
 #from captcha import CaptchaWindow
 from queue import Queue
 from collector import Collector
+from download_bar import DownloadBar
 
 import utils
 
@@ -46,6 +47,7 @@ class MainWindow (object):
 		# create ui components
 		self.queue = Queue (builder, self.client)
 		self.collector = Collector (builder, self.client)
+		self.download_bar = DownloadBar (builder, self.client)
 
 		self.connect_window = ConnectWindow (self.client)
 		self.connect_window.window.set_transient_for (self.window)
