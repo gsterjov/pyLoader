@@ -76,6 +76,10 @@ class Queue (object):
 			elif item.links_downloading > 0:
 				cell.set_property ("cell-background-rgba", Gdk.RGBA(0, 0, 1, 0.1))
 				cell.set_property ("cell-background-set", True)
+
+			elif item.links_offline > 0:
+				cell.set_property ("cell-background-rgba", Gdk.RGBA(1, 0.2, 0, 0.3))
+				cell.set_property ("cell-background-set", True)
 		
 		# links
 		if item.is_link:

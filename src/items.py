@@ -93,7 +93,7 @@ class Package (Item):
 	def links_offline (self):
 		offline = 0
 		for link in self.links:
-			if link.status in [Link.Status.OFFLINE, Link.Status.TEMP_OFFLINE]:
+			if link.status in [Link.Status.ABORTED, Link.Status.FAILED, Link.Status.OFFLINE, Link.Status.TEMP_OFFLINE]:
 				offline += 1
 				
 		return offline
