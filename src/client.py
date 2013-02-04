@@ -26,6 +26,7 @@ from thrift.protocol.TBinaryProtocol import TBinaryProtocol
 
 from event import Event
 from live_property import live_property
+from live_dict_property import live_dict_property
 
 from items import Package, Link, ActiveLink
 
@@ -120,7 +121,7 @@ class Client (object):
 		self._collector_cache = {}
 		self._finished_cache = {}
 		self._online_check_cache = {}
-	
+
 
 	def connect (self, host, port, username, password):
 		'''
@@ -290,18 +291,32 @@ class Client (object):
 		self.client.unpauseServer()
 	
 	
-	@property
+	@live_dict_property
 	@login_required
 	def queue (self):
 		'''
-		A list of packages currently in the queue
+		A dict of packages currently in the queue
 		'''
-		packages = []
+		packages = {}
 		
 		for item in self.client.getQueue():
-			packages.append (Package (self.client, item))
-		
+			packages[item.pid] = Package (self.client, item)
+
 		return packages
+
+	@live_dict_property
+	@login_required
+	def captchas (self):
+		'''
+		The current captcha tasks waiting to be actioned
+		'''
+		captchas = {}
+
+		if self.client.isCaptchaWaiting():
+			task = self.client.getCaptchaTask (False)
+			captchas[task.tid] = task
+
+		return captchas
 
 
 	def queue_package (self, package):
@@ -431,6 +446,14 @@ class Client (object):
 		for rid, data in self._online_check_cache.items():
 			results = self.client.pollResults (rid)
 			self._update_online_check_cache (rid, results)
+
+
+	def poll_captcha (self):
+		'''
+		Poll for captcha tasks waiting to be actioned in the backend
+		'''
+		if self.client.isCaptchaWaiting():
+			print self.client.getCaptchaTask()
 	
 	
 	def poll (self):
@@ -441,10 +464,13 @@ class Client (object):
 		for prop in self.properties_to_poll:
 			prop.update()
 		
-		self.poll_queue()
-		self.poll_active()
-		self.poll_collector()
-		self.poll_online_checks()
+		self.queue.update()
+		self.captchas.update()
+
+		# self.poll_queue()
+		# self.poll_active()
+		# self.poll_collector()
+		# self.poll_online_checks()
 		
 		return True
 

@@ -106,8 +106,36 @@ class Package (Item):
 				downloading += 1
 
 		return downloading
+
+	@property
+	def links_waiting (self):
+		waiting = 0
+		for link in self.links:
+			if link.status == Link.Status.WAITING:
+				waiting += 1
+
+		return waiting
 	
 	
+	def __eq__ (self, other):
+		return (
+			self.id == other.id
+			and self.name == other.name
+			and self.folder == other.folder
+			and self.site == other.site
+			and self.password == other.password
+			and self.dest == other.dest
+			and self.order == other.order
+
+			and self.links_done == other.links_done
+			and self.links_total == other.links_total
+			and self.size_done == other.size_done
+			and self.size_total == other.size_total
+		)
+
+	def __ne__ (self, other):
+		return not (self == other)
+
 	def __repr__ (self):
 		return "<Package id: {0}, name: {1}>".format (self.id, self.name)
 

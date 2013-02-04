@@ -54,8 +54,10 @@ class Queue (object):
 		link.set_cell_data_func (name_renderer, self.__render_name)
 		host.set_cell_data_func (host_renderer, self.__render_host)
 
-		# connect to server events
-		client.on_queue_added += self.__on_queue_added
+		# connect to client property events
+		client.queue.added += self.__on_queue_added
+		client.queue.changed += self.__on_queue_changed
+
 		client.on_active_added += self.__on_active_added
 		client.on_finished_added += self.__on_finished_added
 		client.on_active_changed += self.__on_active_changed
@@ -79,6 +81,10 @@ class Queue (object):
 
 			elif item.links_offline > 0:
 				cell.set_property ("cell-background-rgba", Gdk.RGBA(1, 0.2, 0, 0.3))
+				cell.set_property ("cell-background-set", True)
+			
+			elif item.links_waiting > 0:
+				cell.set_property ("cell-background-rgba", Gdk.RGBA(1, 1, 0, 0.5))
 				cell.set_property ("cell-background-set", True)
 		
 		# links
@@ -159,7 +165,7 @@ class Queue (object):
 		self.__set_cell_background (cell, item)
 	
 	
-	def __on_queue_added (self, package):
+	def __on_queue_added (self, prop, package):
 		'''
 		Handler to show newly added packages from the server
 		'''
@@ -167,6 +173,9 @@ class Queue (object):
 		
 		for link in package.links:
 			self.store.append (parent, [link, None])
+
+	def __on_queue_changed (self, prop, package):
+		print package
 	
 
 	def __on_active_added (self, link):

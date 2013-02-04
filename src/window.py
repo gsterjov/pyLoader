@@ -20,7 +20,7 @@ from gi.repository import Gtk, GLib
 
 from client import Client
 from connect_window import ConnectWindow
-#from captcha import CaptchaWindow
+from captcha import CaptchaWindow
 from queue import Queue
 from collector import Collector
 from download_bar import DownloadBar
@@ -49,9 +49,15 @@ class MainWindow (object):
 		self.collector = Collector (builder, self.client)
 		self.download_bar = DownloadBar (builder, self.client)
 
+
+		# connect window
 		self.connect_window = ConnectWindow (self.client)
 		self.connect_window.window.set_transient_for (self.window)
-		
+
+		# captcha window
+		self.captcha_window = CaptchaWindow()
+		self.captcha_window.window.set_transient_for (self.window)
+
 
 		# statusbar
 		self.statusbar = builder.get_object ("statusbar")
@@ -84,7 +90,9 @@ class MainWindow (object):
 		self.client.speed.changed += self.__on_speed_changed
 		self.client.links_active.changed += self.__on_links_active_changed
 		self.client.links_waiting.changed += self.__on_links_waiting_changed
-		
+
+		self.client.captchas.added += self.__on_captcha_added
+
 		# show main window
 		self.window.show_all()
 
@@ -140,6 +148,10 @@ class MainWindow (object):
 	def __on_speed_changed (self, prop, speed):
 		self.speed_status.set_text ("{0}/s".format(utils.format_size(speed)))
 	
+
+	def __on_captcha_added (self, prop, captcha):
+		self.captcha_window.load (captcha.type, captcha.data)
+		self.captcha_window.show()
 	
 	
 if __name__ == "__main__":
