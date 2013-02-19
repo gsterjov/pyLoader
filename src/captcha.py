@@ -16,9 +16,7 @@
 #    along with pyLoadGtk.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import base64
-from StringIO import StringIO
-from gi.repository import Gtk, GdkPixbuf
+from gi.repository import Gtk
 
 
 class CaptchaWindow(object):
@@ -51,23 +49,11 @@ class CaptchaWindow(object):
 		return self.window.hide()
 	
 
-	def load (self, type, data):
+	def load (self, pixbuf):
 		'''
-		Load the captcha window with the specified image data
+		Load the captcha window with the specified pixbuf
 		'''
-		data = base64.b64decode (data)
-
-		buf = StringIO()
-		buf.write (data)
-		data = buf.getvalue()
-		buf.close()
-
-		loader = GdkPixbuf.PixbufLoader.new()
-		loader.write (data)
-		pixbuf = loader.get_pixbuf()
-		loader.close()
-
-		self.image.set_from_pixbuf (pixbuf)
+		pass
 
 	
 	def submit (self, button):

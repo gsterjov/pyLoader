@@ -16,6 +16,11 @@
 #    along with pyLoader.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import base64
+from StringIO import StringIO
+from gi.repository import GdkPixbuf
+
+
 def format_size (bytes):
 	'''
 	Format the specified size (bytes) into a human readable value
@@ -34,18 +39,37 @@ def format_size (bytes):
 	return '{0:.1f} {1}'.format (float(bytes) / float(factor), suffix)
 
 
-def format_time(seconds):
+def format_time (seconds):
 	'''
 	Format the specified time (seconds) into a human readable value
 	'''
 	text = ""
 	
 	# humanise time value
-	min, sec = divmod(seconds, 60)
-	hrs, min = divmod(min, 60)
+	min, sec = divmod (seconds, 60)
+	hrs, min = divmod (min, 60)
 	
-	if hrs > 0: text += "{0} hours, ".format(int(hrs))
-	if min > 0: text += "{0} minutes, ".format(int(min))
+	if hrs > 0: text += "{0} hours, ".format (int(hrs))
+	if min > 0: text += "{0} minutes, ".format (int(min))
 	
-	text += "{0} seconds".format(int(sec))
+	text += "{0} seconds".format (int(sec))
 	return text
+
+
+def base64_to_pixbuf (data):
+	'''
+	Loads a GdkPixbuf with a base64 encoded image
+	'''
+	data = base64.b64decode (data)
+
+	buf = StringIO()
+	buf.write (data)
+	data = buf.getvalue()
+	buf.close()
+
+	loader = GdkPixbuf.PixbufLoader.new()
+	loader.write (data)
+	pixbuf = loader.get_pixbuf()
+	loader.close()
+
+	return pixbuf

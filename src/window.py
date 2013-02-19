@@ -16,7 +16,7 @@
 #    along with pyLoader.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib, Notify
 
 from client import Client
 from connect_window import ConnectWindow
@@ -97,7 +97,20 @@ class MainWindow (object):
 		self.window.show_all()
 
 		self.__load()
+
+
+		# set up notification
+		Notify.init ("pyLoader")
+		self.notification = Notify.Notification.new ("New Captcha", "Please fill out the follwing captcha", "dialog-question")
+
+		self.notification.add_action ("show-captcha", "Enter Captcha", self.notification_callback, None, None)
+		self.notification.set_hint ("sound-name", GLib.Variant("s", "dialog-question"))
+		self.notification.set_hint ("desktop-entry", GLib.Variant("s", "empathy"))
 	
+
+	def notification_callback (self, action, userdata):
+		print action
+
 	
 	def show_connect_window (self):
 		'''
@@ -150,8 +163,10 @@ class MainWindow (object):
 	
 
 	def __on_captcha_added (self, prop, captcha):
-		self.captcha_window.load (captcha.type, captcha.data)
-		self.captcha_window.show()
+		pixbuf = utils.base64_to_pixbuf (captcha.data)
+
+		self.notification.set_image_from_pixbuf (pixbuf)
+		self.notification.show()
 	
 	
 if __name__ == "__main__":
