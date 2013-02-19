@@ -58,9 +58,10 @@ class Queue (object):
 		client.queue.added += self.__on_queue_added
 		client.queue.changed += self.__on_queue_changed
 
-		client.on_active_added += self.__on_active_added
+		client.downloads.added += self.__on_downloads_added
+		client.downloads.changed += self.__on_downloads_changed
+
 		client.on_finished_added += self.__on_finished_added
-		client.on_active_changed += self.__on_active_changed
 	
 	
 	
@@ -137,7 +138,11 @@ class Queue (object):
 			# link is pending some action
 			elif active_link and item.status == Link.Status.WAITING:
 				# get the current wait time
-				wait_time = utils.format_time (active_link.wait_time - time())
+				remaining = active_link.wait_time - time()
+				if remaining < 0:
+					remaining = 0
+
+				wait_time = utils.format_time (remaining)
 				details = "[{0}]  -  {1} left".format (size, wait_time)
 			
 			# link has failed
@@ -174,18 +179,26 @@ class Queue (object):
 		for link in package.links:
 			self.store.append (parent, [link, None])
 
+
 	def __on_queue_changed (self, prop, package):
 		print package
 	
 
-	def __on_active_added (self, link):
+	def __on_downloads_added (self, prop, download):
 		'''
 		Handler to show the current status of a download from the server
 		'''
 		for row in self.store:
 			for item in row.iterchildren():
-				if item[0].id == link.id:
-					item[1] = link
+				if item[0].id == download.id:
+					item[1] = download
+
+
+	def __on_downloads_changed (self, prop, download):
+		'''
+		Handler to refresh the queue tree
+		'''
+		self.queue_tree.queue_draw()
 	
 
 	def __on_finished_added (self, package):
@@ -196,10 +209,3 @@ class Queue (object):
 		
 		for link in package.links:
 			self.store.append (parent, [link, None])
-	
-
-	def __on_active_changed (self):
-		'''
-		Handler to refresh the queue tree
-		'''
-		self.queue_tree.queue_draw()

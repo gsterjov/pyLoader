@@ -303,6 +303,31 @@ class Client (object):
 			packages[item.pid] = Package (self.client, item)
 
 		return packages
+	
+	
+	@live_dict_property
+	@login_required
+	def downloads (self):
+		'''
+		A dict of all active downloads
+		'''
+		downloads = {}
+		
+		for item in self.client.statusDownloads():
+			download = ActiveLink()
+
+			download.id			= item.fid
+			download.size		= item.size
+			download.speed		= item.speed
+			download.bytes_left	= item.bleft
+			download.eta		= item.eta
+			download.wait_time	= item.wait_until
+			download.percent	= item.percent
+
+			downloads[item.fid] = download
+
+		return downloads
+
 
 	@live_dict_property
 	@login_required
@@ -343,59 +368,6 @@ class Client (object):
 		# update the first results
 		self._online_check_cache[results.rid] = items
 		self._update_online_check_cache (results.rid, results)
-
-	
-	
-	def poll_queue (self):
-		'''
-		Poll the backend queue for new packages or changes to existing ones
-		'''
-		queue = self.client.getQueue()
-		ids = []
-		
-		for item in queue:
-			ids.append (item.pid)
-
-			# update package
-			if self._queue_cache.has_key (item.pid):
-				pass
-			
-			# add package
-			else:
-				package = Package (self.client, item)
-				self._queue_cache[item.pid] = package
-				self.on_queue_added (package)
-		
-
-		# remove packages from the cache
-		for package_id, package in self._queue_cache.items():
-			if not package_id in ids:
-				self.on_queue_removed (package)
-				del self._queue_cache[package_id]
-		
-		return True
-
-
-	def poll_active (self):
-		'''
-		Poll the backed for the status of all active downloads
-		'''
-		active = self.client.statusDownloads()
-
-		for item in active:
-			# update link
-			if self._active_cache.has_key (item.fid):
-				self._update_active_cache (item)
-				self.on_active_changed()
-
-			# add link
-			else:
-				link = ActiveLink()
-				self._active_cache[item.fid] = link
-				self._update_active_cache (item)
-				self.on_active_added (link)
-
-		return True
 
 
 	def poll_collector (self):
@@ -446,14 +418,6 @@ class Client (object):
 		for rid, data in self._online_check_cache.items():
 			results = self.client.pollResults (rid)
 			self._update_online_check_cache (rid, results)
-
-
-	def poll_captcha (self):
-		'''
-		Poll for captcha tasks waiting to be actioned in the backend
-		'''
-		if self.client.isCaptchaWaiting():
-			print self.client.getCaptchaTask()
 	
 	
 	def poll (self):
@@ -465,32 +429,14 @@ class Client (object):
 			prop.update()
 		
 		self.queue.update()
+		self.downloads.update()
 		self.captchas.update()
 
-		# self.poll_queue()
-		# self.poll_active()
 		# self.poll_collector()
 		# self.poll_online_checks()
 		
 		return True
-
-
-
-	def _update_active_cache (self, status):
-		'''
-		Helper method to process the active download status and update
-		the associated items and cache
-		'''
-		link = self._active_cache[status.fid]
-
-		link.id = status.fid
-		link.size = status.size
-		link.speed = status.speed
-		link.bytes_left = status.bleft
-		link.eta = status.eta
-		link.wait_time = status.wait_until
-		link.percent = status.percent
-
+		
 
 	def _update_online_check_cache (self, rid, results):
 		'''

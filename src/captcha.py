@@ -59,7 +59,7 @@ class CaptchaWindow(object):
 		'''
 		Load the captcha window with the specified pixbuf
 		'''
-		pass
+		self.image.set_from_pixbuf (pixbuf)
 	
 	def __on_submit (self, button):
 		pass

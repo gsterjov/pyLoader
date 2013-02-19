@@ -95,8 +95,8 @@ class DownloadBar (object):
 		self.downloads = builder.get_object ("downloads")
 		
 		# connect to server events
-		client.on_active_added += self.__on_active_added
-		client.on_active_changed += self.__on_active_changed
+		client.downloads.added += self.__on_download_added
+		client.downloads.changed += self.__on_download_changed
 	
 	
 	def show_connect_window (self):
@@ -108,7 +108,7 @@ class DownloadBar (object):
 	
 	
 
-	def __on_active_added (self, status):
+	def __on_download_added (self, prop, item):
 		'''
 		Handler to show the current status of a download from the server
 		'''
@@ -124,7 +124,7 @@ class DownloadBar (object):
 					self.downloads.show_all()
 
 
-	def __on_active_changed (self):
+	def __on_download_changed (self, prop, item):
 		'''
 		Handler to update items in the download bar
 		'''
