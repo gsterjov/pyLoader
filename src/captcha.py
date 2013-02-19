@@ -25,7 +25,7 @@ class CaptchaWindow(object):
 	'''
 
 
-	def __init__(self):
+	def __init__ (self):
 		'''
 		Constructor
 		'''
@@ -39,13 +39,19 @@ class CaptchaWindow(object):
 		self.image = builder.get_object ("image")
 		self.entry = builder.get_object ("entry")
 		
-		submit.connect ("clicked", self.submit)
+		submit.connect ("clicked", self.__on_submit)
 	
 	
-	def show (self):
-		return self.window.show_all()
+	def run (self):
+		'''
+		Open the dialog and wait for a response
+		'''
+		return self.window.run()
 	
 	def hide (self):
+		'''
+		Hide the dialog window
+		'''
 		return self.window.hide()
 	
 
@@ -54,7 +60,6 @@ class CaptchaWindow(object):
 		Load the captcha window with the specified pixbuf
 		'''
 		pass
-
 	
-	def submit (self, button):
+	def __on_submit (self, button):
 		pass

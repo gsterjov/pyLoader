@@ -43,6 +43,14 @@ class MainWindow (object):
 		builder = Gtk.Builder()
 		builder.add_from_file ("ui/main.xml")
 		self.window = builder.get_object ("main_window")
+
+		# set up notification
+		Notify.init ("pyLoader")
+		self.notification = Notify.Notification.new ("New Captcha", "Please fill out the follwing captcha", "dialog-question")
+
+		self.notification.add_action ("show-captcha", "Enter Captcha", self.__on_show_captcha, None, None)
+		self.notification.set_hint ("sound-name", GLib.Variant("s", "dialog-question"))
+		self.notification.set_hint ("desktop-entry", GLib.Variant("s", "empathy"))
 		
 		# create ui components
 		self.queue = Queue (builder, self.client)
@@ -97,19 +105,6 @@ class MainWindow (object):
 		self.window.show_all()
 
 		self.__load()
-
-
-		# set up notification
-		Notify.init ("pyLoader")
-		self.notification = Notify.Notification.new ("New Captcha", "Please fill out the follwing captcha", "dialog-question")
-
-		self.notification.add_action ("show-captcha", "Enter Captcha", self.notification_callback, None, None)
-		self.notification.set_hint ("sound-name", GLib.Variant("s", "dialog-question"))
-		self.notification.set_hint ("desktop-entry", GLib.Variant("s", "empathy"))
-	
-
-	def notification_callback (self, action, userdata):
-		print action
 
 	
 	def show_connect_window (self):
@@ -167,6 +162,15 @@ class MainWindow (object):
 
 		self.notification.set_image_from_pixbuf (pixbuf)
 		self.notification.show()
+
+		self.captcha_window.load (pixbuf)
+
+		response = self.captcha_window.run()
+		self.captcha_window.hide()
+
+
+	def __on_show_captcha (self, notification, action, userdata):
+		self.window.present()
 	
 	
 if __name__ == "__main__":
