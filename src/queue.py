@@ -17,7 +17,6 @@
 #
 
 import datetime
-from time import time
 from gi.repository import Gtk, Gdk
 
 import utils
@@ -138,11 +137,9 @@ class Queue (object):
 			# link is pending some action
 			elif active_link and item.status == Link.Status.WAITING:
 				# get the current wait time
-				remaining = active_link.wait_time - time()
-				if remaining < 0:
-					remaining = 0
-
+				remaining = active_link.time_left if active_link.time_left > 0 else 0
 				wait_time = utils.format_time (remaining)
+
 				details = "[{0}]  -  {1} left".format (size, wait_time)
 			
 			# link has failed
@@ -176,12 +173,12 @@ class Queue (object):
 		'''
 		parent = self.store.append (None, [package, None])
 		
-		for link in package.links:
+		for link in package.links.itervalues():
 			self.store.append (parent, [link, None])
 
 
 	def __on_queue_changed (self, prop, package):
-		print package
+		self.queue_tree.queue_draw()
 	
 
 	def __on_downloads_added (self, prop, download):
@@ -199,6 +196,13 @@ class Queue (object):
 		Handler to refresh the queue tree
 		'''
 		self.queue_tree.queue_draw()
+
+
+	def __on_downloads_removed (self, prop, download):
+		'''
+		Handler to remove downloads no longer active
+		'''
+		print download
 	
 
 	def __on_finished_added (self, package):
@@ -207,5 +211,5 @@ class Queue (object):
 		'''
 		parent = self.store.append (None, [package, None])
 		
-		for link in package.links:
+		for link in package.links.itervalues():
 			self.store.append (parent, [link, None])

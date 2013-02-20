@@ -291,7 +291,7 @@ class Client (object):
 		self.client.unpauseServer()
 	
 	
-	@live_dict_property
+	@live_property
 	@login_required
 	def queue (self):
 		'''
@@ -299,13 +299,13 @@ class Client (object):
 		'''
 		packages = {}
 		
-		for item in self.client.getQueue():
-			packages[item.pid] = Package (self.client, item)
+		for item in self.client.getQueueData():
+			packages[item.pid] = Package (item)
 
 		return packages
 	
 	
-	@live_dict_property
+	@live_property
 	@login_required
 	def downloads (self):
 		'''
@@ -314,22 +314,12 @@ class Client (object):
 		downloads = {}
 		
 		for item in self.client.statusDownloads():
-			download = ActiveLink()
-
-			download.id			= item.fid
-			download.size		= item.size
-			download.speed		= item.speed
-			download.bytes_left	= item.bleft
-			download.eta		= item.eta
-			download.wait_time	= item.wait_until
-			download.percent	= item.percent
-
-			downloads[item.fid] = download
+			downloads[item.fid] = ActiveLink (item)
 
 		return downloads
 
 
-	@live_dict_property
+	@live_property
 	@login_required
 	def captchas (self):
 		'''
@@ -436,7 +426,7 @@ class Client (object):
 		# self.poll_online_checks()
 		
 		return True
-		
+
 
 	def _update_online_check_cache (self, rid, results):
 		'''

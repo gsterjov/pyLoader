@@ -16,6 +16,7 @@
 #    along with pyLoader.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from time import time
 from gi.repository import GObject
 
 from pyload.ttypes import DownloadStatus
@@ -40,13 +41,11 @@ class Package (Item):
 	'''
 	A package contains links to be downloaded within the same folder
 	'''
-	def __init__ (self, client, data):
+	def __init__ (self, data):
 		'''
 		Constructor
 		'''
 		Item.__init__ (self, is_package=True)
-		
-		self.client = client
 		
 		self.id = data.pid
 		self.name = data.name
@@ -57,21 +56,12 @@ class Package (Item):
 		self.order = data.order
 		
 		self.links_done = data.linksdone
-		self.links_total = data.linkstotal
+		self.links_total = len(data.links)
 		self.size_done = data.sizedone
 		self.size_total = data.sizetotal
 
-		self.links = []
-		self.update_links()
-	
-	
-	def update_links (self):
-		self.links = []
-		
-		data = self.client.getPackageData (self.id)
-		
-		for link in data.links:
-			self.links.append (Link (link))
+		self.links = {link.fid: Link(link) for (link) in data.links}
+
 
 
 	@property
@@ -81,43 +71,51 @@ class Package (Item):
 
 	@property
 	def links_online (self):
-		online = 0
-		for link in self.links:
-			if link.status == Link.Status.ONLINE:
-				online += 1
-
-		return online
+		states = [Link.Status.ONLINE]
+		return sum(1 for link in self.links.itervalues() if link.status in states)
 
 
 	@property
 	def links_offline (self):
-		offline = 0
-		for link in self.links:
-			if link.status in [Link.Status.ABORTED, Link.Status.FAILED, Link.Status.OFFLINE, Link.Status.TEMP_OFFLINE]:
-				offline += 1
-				
-		return offline
+		states = [Link.Status.ABORTED, Link.Status.FAILED, Link.Status.OFFLINE, Link.Status.TEMP_OFFLINE]
+		return sum(1 for link in self.links.itervalues() if link.status in states)
 
 	@property
 	def links_downloading (self):
-		downloading = 0
-		for link in self.links:
-			if link.status == Link.Status.DOWNLOADING:
-				downloading += 1
-
-		return downloading
+		states = [Link.Status.DOWNLOADING]
+		return sum(1 for link in self.links.itervalues() if link.status in states)
 
 	@property
 	def links_waiting (self):
-		waiting = 0
-		for link in self.links:
-			if link.status == Link.Status.WAITING:
-				waiting += 1
+		states = [Link.Status.WAITING]
+		return sum(1 for link in self.links.itervalues() if link.status in states)
+	
 
-		return waiting
+	def __update__ (self, val):
+		self.id			= val.id
+		self.name		= val.name
+		self.folder		= val.folder
+		self.site		= val.site
+		self.password	= val.password
+		self.dest		= val.dest
+		self.order		= val.order
+ 
+		self.links_done		= val.links_done
+		self.links_total	= len(val.links)
+		self.size_dont		= val.size_done
+		self.size_total		= val.size_total
+
+		for id, link in val.links.iteritems():
+			if self.links[id] != link:
+				self.links[id].__update__ (link)
 	
 	
 	def __eq__ (self, other):
+
+		for id, link in self.links.iteritems():
+			if other.links[id] != link:
+				return False
+
 		return (
 			self.id == other.id
 			and self.name == other.name
@@ -132,6 +130,7 @@ class Package (Item):
 			and self.size_done == other.size_done
 			and self.size_total == other.size_total
 		)
+
 
 	def __ne__ (self, other):
 		return not (self == other)
@@ -215,6 +214,33 @@ class Link (Item):
 	def bytes_transferred (self):
 		return self.size - self.bytes_left
 	
+
+	def __update__ (self, val):
+		self.id		= val.id
+		self.url	= val.url
+		self.name	= val.name
+		self.plugin	= val.plugin
+		self.size	= val.size
+		self.order	= val.order
+		self.status	= val.status
+		self.error	= val.error
+	
+	
+	def __eq__ (self, other):
+		return (
+			self.id == other.id
+			and self.url == other.url
+			and self.name == other.name
+			and self.plugin == other.plugin
+			and self.size == other.size
+			and self.order == other.order
+			and self.status == other.status
+			and self.error == other.error
+		)
+
+	def __ne__ (self, other):
+		return not (self == other)
+	
 	
 	def __repr__ (self):
 		return "<Link id: {0}, name: {1}, url: {2}, size: {3}, status: {4}>".format(
@@ -227,21 +253,49 @@ class ActiveLink (Item):
 	A link currently being downloaded
 	'''
 
-	def __init__ (self):
+	def __init__ (self, data):
 		Item.__init__ (self, is_link=True)
 
-		self.id = 0
-		self.size = 0
-		self.speed = 0
-		self.bytes_left = 0
-		self.eta = 0
-		self.wait_time = 0
-		self.percent = 0
+		self.id			= data.fid
+		self.size		= data.size
+		self.speed		= data.speed
+		self.bytes_left	= data.bleft
+		self.eta		= data.eta
+		self.wait_time	= data.wait_until
+		self.percent	= data.percent
+		self.time_left	= data.wait_until - time()
 
 
 	@property
 	def bytes_transferred (self):
 		return self.size - self.bytes_left
+	
+
+	def __update__ (self, val):
+		self.id			= val.id
+		self.size		= val.size
+		self.speed		= val.speed
+		self.bytes_left	= val.bytes_left
+		self.eta		= val.eta
+		self.wait_time	= val.wait_time
+		self.percent	= val.percent
+		self.time_left	= val.time_left
+
+	
+	def __eq__ (self, other):
+		return (
+			self.id == other.id
+			and self.size == other.size
+			and self.speed == other.speed
+			and self.bytes_left == other.bytes_left
+			and self.eta == other.eta
+			and self.wait_time == other.wait_time
+			and self.percent == other.percent
+			and self.time_left == other.time_left
+		)
+
+	def __ne__ (self, other):
+		return not (self == other)
 	
 	
 	def __repr__ (self):

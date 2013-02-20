@@ -45,11 +45,15 @@ class live_property (object):
 	_value attribute
 	'''
 	
+	added = None
+	removed = None
 	changed = None
 	
 	
 	def __init__ (self, func):
 		self._value = None
+		self.added = Event()
+		self.removed = Event()
 		self.changed = Event()
 		
 		self.func = func
@@ -73,7 +77,7 @@ class live_property (object):
 		self.update()
 		return self._value
 	
-	
+
 	def update (self):
 		'''
 		Updates the currently cached value by executing the property function.
@@ -83,8 +87,62 @@ class live_property (object):
 		which will act as if it had been accessed
 		'''
 		val = self.func (self._instance)
-		
+
+		if type(val) == dict:
+			self.update_dict (val)
+		else:
+			self.update_value (val)
+
+	
+
+	def update_value (self, val):
+		'''
+		Updates the property when it is a simple value
+		'''
 		if val != self._value:
 			self._value = val
 			self.changed (self._instance, val)
-		
+	
+	
+	def update_dict (self, val):
+		'''
+		Updates the property when it is a dictionary. If it contains simple values then
+		it will just assign them, otherwise if it is a subclass of object then it will
+		call __update__ on the object so as to use the same instance throughout whilst
+		refreshing its contents. If the object does not implement __update__ then it will
+		be treated like a simple value
+		'''
+		# assume uninitialised property
+		if type(self._value) != dict:
+			self._value = {}
+
+		# determine if the dict has changed at all
+		for key, item in val.iteritems():
+
+			# item cached
+			if self._value.has_key (key):
+				# item changed
+				if self._value[key] != item:
+
+					# treat objects differently
+					if isinstance(self._value[key], object) and hasattr(self._value[key], "__update__"):
+						self._value[key].__update__ (item)
+
+					# simple value assignment
+					else:
+						self._value[key] = item
+
+					self.changed (self._instance, item)
+
+			# new item
+			else:
+				self._value[key] = item
+				self.added (self._instance, item)
+
+		# find out if a cached item has been removed
+		for key, item in self._value.items():
+
+			# cached item not in dict
+			if not val.has_key (key):
+				del self._value[key]
+				self.removed (self._instance, item)
