@@ -16,6 +16,7 @@
 #    along with pyLoader.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from pkg_resources import Requirement, resource_filename
 from gi.repository import Gtk, Gio
 
 
@@ -35,8 +36,9 @@ class ConnectWindow (object):
 		self.settings = Gio.Settings.new ("org.pyLoader")
 		
 		# load the ui
+		filename = resource_filename (Requirement.parse ("pyloader"), "pyloader/ui/login.xml")
 		builder = Gtk.Builder()
-		builder.add_from_file ("ui/login.xml")
+		builder.add_from_file (filename)
 		
 		self.window = builder.get_object ("login_window")
 		connect_button = builder.get_object ("connect")

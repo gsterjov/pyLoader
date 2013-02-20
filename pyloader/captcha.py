@@ -16,6 +16,7 @@
 #    along with pyLoadGtk.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from pkg_resources import Requirement, resource_filename
 from gi.repository import Gtk
 
 
@@ -29,8 +30,9 @@ class CaptchaWindow(object):
 		'''
 		Constructor
 		'''
+		filename = resource_filename (Requirement.parse ("pyloader"), "pyloader/ui/captcha_notify.xml")
 		builder = Gtk.Builder()
-		builder.add_from_file ("ui/captcha_notify.xml")
+		builder.add_from_file (filename)
 		
 		self.window = builder.get_object ("captcha_window")
 		submit = builder.get_object ("submit")

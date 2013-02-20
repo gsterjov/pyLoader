@@ -16,6 +16,7 @@
 #    along with pyLoader.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from pkg_resources import Requirement, resource_filename
 from gi.repository import Gtk, GLib, Notify
 
 from client import Client
@@ -40,8 +41,9 @@ class MainWindow (object):
 		self.client = Client()
 		
 		# load the main window
+		filename = resource_filename (Requirement.parse ("pyloader"), "pyloader/ui/main.xml")
 		builder = Gtk.Builder()
-		builder.add_from_file ("ui/main.xml")
+		builder.add_from_file (filename)
 		self.window = builder.get_object ("main_window")
 
 		# set up notification
@@ -173,6 +175,6 @@ class MainWindow (object):
 		self.window.present()
 	
 	
-if __name__ == "__main__":
+def start():
 	main_window = MainWindow()
 	Gtk.main()
