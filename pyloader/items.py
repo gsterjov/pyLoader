@@ -211,8 +211,12 @@ class Link (Item):
 
 
 	@property
-	def bytes_transferred (self):
-		return self.size - self.bytes_left
+	def offline (self):
+		return self.status in [Link.Status.ABORTED, Link.Status.FAILED, Link.Status.OFFLINE, Link.Status.TEMP_OFFLINE]
+
+	@property
+	def active (self):
+		return self.status in [Link.Status.DOWNLOADING, Link.Status.WAITING]
 	
 
 	def __update__ (self, val):

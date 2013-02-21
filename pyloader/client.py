@@ -334,6 +334,20 @@ class Client (object):
 		return captchas
 
 
+	def restart_link (self, link):
+		'''
+		Restarts the link so that it can be downloaded again
+		'''
+		self.client.restartFile (link.id)
+
+
+	def abort_link (self, link):
+		'''
+		Aborts the link
+		'''
+		self.client.stopDownloads ([link.id])
+
+
 	def queue_package (self, package):
 		'''
 		Adds the specified package to the queue

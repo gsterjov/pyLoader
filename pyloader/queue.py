@@ -32,7 +32,19 @@ class Queue (object):
 		'''
 		Constructor
 		'''
+		self.client = client
+
 		self.queue_tree = builder.get_object ("queue_tree")
+
+		self.link_menu_failed = builder.get_object ("queue_link_failed")
+		self.link_menu_active = builder.get_object ("queue_link_active")
+
+		menu_item_restart = builder.get_object ("queue_link_restart")
+		menu_item_abort = builder.get_object ("queue_link_abort")
+
+		# self.menu_item_move = builder.get_object ("queue_package_move")
+		# self.menu_item_resume = builder.get_object ("queue_package_resume")
+		# self.menu_item_pause = builder.get_object ("queue_package_pause")
 		
 		# columns
 		link = builder.get_object ("queue_link")
@@ -52,6 +64,11 @@ class Queue (object):
 		
 		link.set_cell_data_func (name_renderer, self.__render_name)
 		host.set_cell_data_func (host_renderer, self.__render_host)
+
+		# connect to ui events
+		self.queue_tree.connect ("button-press-event", self.__on_button_press)
+		menu_item_restart.connect ("activate", self.__on_restart_link)
+		menu_item_abort.connect ("activate", self.__on_abort_link)
 
 		# connect to client property events
 		client.queue.added += self.__on_queue_added
@@ -213,3 +230,50 @@ class Queue (object):
 		
 		for link in package.links.itervalues():
 			self.store.append (parent, [link, None])
+
+
+
+	def __on_button_press (self, widget, event):
+		'''
+		Handler to show the popup menu in the queue
+		'''
+		if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:
+			# get the current selection to determine which popup to use
+			path, column, cell_x, cell_y = self.queue_tree.get_path_at_pos (event.x, event.y)
+			iter = self.store.get_iter (path)
+
+			# show the right context
+			if iter and self.store[iter][0].is_link:
+				link = self.store[iter][0]
+
+				if link.offline:
+					self.link_menu_failed.popup (None, None, None, None, event.button, event.time)
+
+				elif link.active:
+					self.link_menu_active.popup (None, None, None, None, event.button, event.time)
+
+		return False
+
+
+	def __on_restart_link (self, userdata):
+		'''
+		Handler to restart failed links
+		'''
+		selection = self.queue_tree.get_selection()
+		model, iter = selection.get_selected()
+
+		if iter != None:
+			link = model[iter][0]
+			self.client.restart_link (link)
+
+
+	def __on_abort_link (self, userdata):
+		'''
+		Handler to abort active links
+		'''
+		selection = self.queue_tree.get_selection()
+		model, iter = selection.get_selected()
+
+		if iter != None:
+			link = model[iter][0]
+			self.client.abort_link (link)

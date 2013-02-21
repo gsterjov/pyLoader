@@ -193,7 +193,7 @@ class Collector (object):
 			selection = self.collector_tree.get_selection()
 			model, iter = selection.get_selected()
 
-			if model[iter][0].is_package:
+			if iter and model[iter][0].is_package:
 				self.package_menu.popup (None, None, None, None, event.button, event.time)
 
 		return False
