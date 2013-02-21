@@ -170,6 +170,9 @@ class MainWindow (object):
 		response = self.captcha_window.run()
 		self.captcha_window.hide()
 
+		if response == 0:
+			self.client.answer_captcha (captcha, self.captcha_window.answer)
+
 
 	def __on_show_captcha (self, notification, action, userdata):
 		self.window.present()

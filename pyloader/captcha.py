@@ -40,9 +40,12 @@ class CaptchaWindow(object):
 		
 		self.image = builder.get_object ("image")
 		self.entry = builder.get_object ("entry")
-		
-		submit.connect ("clicked", self.__on_submit)
 	
+
+	@property
+	def answer (self):
+		return self.entry.get_text()
+
 	
 	def run (self):
 		'''
@@ -62,6 +65,3 @@ class CaptchaWindow(object):
 		Load the captcha window with the specified pixbuf
 		'''
 		self.image.set_from_pixbuf (pixbuf)
-	
-	def __on_submit (self, button):
-		pass

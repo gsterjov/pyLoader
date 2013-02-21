@@ -374,6 +374,13 @@ class Client (object):
 		self._update_online_check_cache (results.rid, results)
 
 
+	def answer_captcha (self, captcha, answer):
+		'''
+		Set the answer to a captcha challenge
+		'''
+		self.client.setCaptchaResult (captcha.tid, answer)
+
+
 	def poll_collector (self):
 		'''
 		Poll the backend collector for new packages or changes to existing ones
