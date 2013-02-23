@@ -48,7 +48,6 @@ setup(
 		'console_scripts': ['pyloader = pyloader.window:start']
 	},
 
-	install_requires = ['thrift'],
 	zip_safe = False,
 
 	cmdclass = {

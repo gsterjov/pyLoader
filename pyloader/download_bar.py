@@ -74,7 +74,7 @@ class DownloadItem (Gtk.HBox):
 	def update (self):
 		self.name.set_markup ("<small>{0}</small>".format (self.link.name))
 		self.progress.set_fraction (self.status.percent / 100.0)
-		self.speed.set_markup ("<small>{0}/s</small>".format (utils.format_size(self.status.speed)))
+		self.speed.set_markup ("<small>{0}/s - {1}</small>".format (utils.format_size(self.status.speed), utils.format_time(self.status.eta)))
 
 
 
@@ -112,16 +112,18 @@ class DownloadBar (object):
 		'''
 		Handler to show the current status of a download from the server
 		'''
-		found_link = None
+		link = None
 
-		for package in self.client._queue_cache.itervalues():
-			for link in package.links:
-				if link.id == status.id:
-					item = DownloadItem (link, status)
-					self.items.append (item)
+		for package in self.client.queue.value.itervalues():
+			if package.links.has_key (item.id):
+				link = package.links[item.id]
 
-					self.downloads.pack_start (item, False, True, 0)
-					self.downloads.show_all()
+		if link:
+			download = DownloadItem (link, item)
+			self.items.append (download)
+
+			self.downloads.pack_start (download, False, True, 0)
+			self.downloads.show_all()
 
 
 	def __on_download_changed (self, prop, item):

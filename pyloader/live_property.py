@@ -74,7 +74,7 @@ class live_property (object):
 		Get the property value. If the value has changed since last time it
 		was accessed it will raise the changed event
 		'''
-		self.update()
+		# self.update()
 		return self._value
 	
 
