@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-	<schema id="org.pyLoader" path="/org/pyLoader/">
+	<schema id="org.pyLoader.connection" path="/org/pyLoader/connection/">
 		<key type="s" name="host">
 			<default>"localhost"</default>
 			<summary>The pyLoadCore server address</summary>
@@ -15,6 +15,20 @@
 			<default>false</default>
 			<summary>Automatically connect on startup</summary>
 			<description>Whether or not to connect to the saved pyLoad server when the app loads up.</description>
+		</key>
+	</schema>
+
+	<schema id="org.pyLoader.ui" path="/org/pyLoader/ui/">
+		<key name="window-size" type="ai">
+			<default>[900, 600]</default>
+			<summary>Window size</summary>
+			<description>The last size of the window to be used again on next startup.</description>
+		</key>
+
+		<key name="maximised" type="b">
+			<default>false</default>
+			<summary>Maximise the window</summary>
+			<description>The last maximised state of the window to be used again on next startup.</description>
 		</key>
 	</schema>
 </schemalist>

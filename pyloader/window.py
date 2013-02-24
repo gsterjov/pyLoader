@@ -17,7 +17,7 @@
 #
 
 from pkg_resources import Requirement, resource_filename
-from gi.repository import Gtk, GLib, Notify
+from gi.repository import Gtk, Gdk, GLib, Gio, Notify
 
 from client import Client
 from connect_window import ConnectWindow
@@ -39,6 +39,9 @@ class MainWindow (object):
 		Constructor
 		'''
 		self.client = Client()
+
+		# load the application settings
+		self.settings = Gio.Settings.new ("org.pyLoader.ui")
 		
 		# load the main window
 		filename = resource_filename (Requirement.parse ("pyloader"), "pyloader/ui/main.xml")
@@ -88,7 +91,9 @@ class MainWindow (object):
 		self.state_context = self.statusbar.get_context_id ("Application state")
 		
 		# connect to ui events
-		self.window.connect ("delete-event", Gtk.main_quit)
+		self.window.connect ("delete-event", self.__on_close)
+		self.window.connect ("window-state-event", self.__on_window_state)
+
 		self.connect_button.connect ("clicked", self.__on_connect_clicked)
 		self.start_button.connect ("clicked", self.__on_start_clicked)
 		self.stop_button.connect ("clicked", self.__on_stop_clicked)
@@ -104,6 +109,12 @@ class MainWindow (object):
 		self.client.captchas.added += self.__on_captcha_added
 
 		# show main window
+		w, h = self.settings.get_value ("window-size")
+		self.window.resize (w, h)
+
+		if self.settings.get_value ("maximised"):
+			self.window.maximize()
+
 		self.window.show_all()
 
 		self.__load()
@@ -120,6 +131,25 @@ class MainWindow (object):
 	def __load (self):
 		if self.connect_window.auto_connect:
 			self.connect_window.connect()
+
+
+	def __on_close (self, window, event):
+		try:
+			w, h = window.get_size()
+			self.settings.set_value ("window-size", GLib.Variant ('ai', [w, h]))
+
+			Gtk.main_quit()
+
+		except Exception as e:
+			Gtk.main_quit()
+			raise e
+
+
+	def __on_window_state (self, window, event):
+		gdk_window = window.get_window()
+		if gdk_window:
+			maximised = gdk_window.get_state() & Gdk.WindowState.MAXIMIZED == Gdk.WindowState.MAXIMIZED
+			self.settings.set_boolean ("maximised", maximised)
 	
 
 	# UI Events

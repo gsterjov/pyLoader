@@ -33,7 +33,7 @@ class ConnectWindow (object):
 		self.client = client
 
 		# load the application settings
-		self.settings = Gio.Settings.new ("org.pyLoader")
+		self.settings = Gio.Settings.new ("org.pyLoader.connection")
 		
 		# load the ui
 		filename = resource_filename (Requirement.parse ("pyloader"), "pyloader/ui/login.xml")
@@ -84,7 +84,7 @@ class ConnectWindow (object):
 	
 	
 	def __on_connect_click (self, button):
-		if self.__connect():
+		if self.connect():
 			self.settings.set_string ("host", self.host.get_text())
 			self.settings.set_uint ("port", self.port.get_value_as_int())
 			self.settings.set_boolean ("autoconnect", self.autoconnect.get_active())
