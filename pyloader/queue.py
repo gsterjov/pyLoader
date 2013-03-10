@@ -41,11 +41,12 @@ class Queue (object):
 		
 		# create the item store (packages)
 		self.store = Gtk.ListStore (Package.__gtype__)
+		self.store.set_sort_func (0, self.__store_compare, None)
 		self.tree.set_model (self.store)
 		
 
 		# queue columns
-		id_column			= builder.get_object ("queue_id")
+		order_column		= builder.get_object ("queue_order")
 		name_column			= builder.get_object ("queue_name")
 		links_column		= builder.get_object ("queue_links")
 		size_column			= builder.get_object ("queue_size")
@@ -55,7 +56,7 @@ class Queue (object):
 		progress_column		= builder.get_object ("queue_progress")
 		
 		# create renderers
-		id_renderer			= Gtk.CellRendererText()
+		order_renderer		= Gtk.CellRendererText()
 		name_renderer		= Gtk.CellRendererText()
 		links_renderer		= Gtk.CellRendererText()
 		size_renderer		= Gtk.CellRendererText()
@@ -65,7 +66,7 @@ class Queue (object):
 		progress_renderer	= Gtk.CellRendererProgress()
 		
 		# set column renderers
-		id_column.pack_start (id_renderer, True)
+		order_column.pack_start (order_renderer, True)
 		name_column.pack_start (name_renderer, True)
 		links_column.pack_start (links_renderer, True)
 		size_column.pack_start (size_renderer, True)
@@ -74,7 +75,7 @@ class Queue (object):
 		eta_column.pack_start (eta_renderer, True)
 		progress_column.pack_start (progress_renderer, True)
 		
-		id_column.set_cell_data_func (id_renderer, self.__render_id)
+		order_column.set_cell_data_func (order_renderer, self.__render_order)
 		name_column.set_cell_data_func (name_renderer, self.__render_name)
 		links_column.set_cell_data_func (links_renderer, self.__render_links)
 		size_column.set_cell_data_func (size_renderer, self.__render_size)
@@ -95,8 +96,10 @@ class Queue (object):
 		client.queue.changed += self.__on_queue_changed
 	
 
-	def __render_id (self, column, cell, model, iter, data):
-		pass
+	def __render_order (self, column, cell, model, iter, data):
+		# get the item we are dealing with
+		item = model[iter][0]
+		cell.set_property ("text", "{0}".format (item.order))
 
 
 	def __render_name (self, column, cell, model, iter, data):
@@ -184,6 +187,15 @@ class Queue (object):
 
 		cell.set_property ("value", percent / len(item.links))
 	
+
+	def __store_compare (self, model, row1, row2, userdata):
+		item1 = model[row1][0]
+		item2 = model[row2][0]
+		
+		if item1.order < item2.order: return -1
+		elif item1.order == item2.order: return 0
+		else: return 1
+
 	
 	def __on_queue_added (self, prop, package):
 		'''

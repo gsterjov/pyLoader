@@ -38,11 +38,11 @@ class Links (object):
 		self.tree = builder.get_object ("link_tree")
 		self.title = builder.get_object ("links_selected_package")
 
-		self.menu_failed = builder.get_object ("queue_link_failed")
-		self.menu_active = builder.get_object ("queue_link_active")
+		self.menu_failed = builder.get_object ("menu_link_failed")
+		self.menu_active = builder.get_object ("menu_link_active")
 
-		menu_item_restart = builder.get_object ("queue_link_restart")
-		menu_item_abort = builder.get_object ("queue_link_abort")
+		menu_item_restart = builder.get_object ("menu_link_restart")
+		menu_item_abort = builder.get_object ("menu_link_abort")
 
 		# self.menu_item_move = builder.get_object ("queue_package_move")
 		# self.menu_item_resume = builder.get_object ("queue_package_resume")
