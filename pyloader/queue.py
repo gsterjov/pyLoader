@@ -21,7 +21,7 @@ import mimetypes
 from gi.repository import Gtk, Gdk, Gio, Pango
 
 import utils
-from items import Item, Package
+from items import Item, Package, Link
 from links import Links
 
 
@@ -45,23 +45,43 @@ class Queue (object):
 		
 
 		# queue columns
-		id = builder.get_object ("queue_id")
-		name = builder.get_object ("queue_name")
-		progress = builder.get_object ("queue_progress")
+		id_column			= builder.get_object ("queue_id")
+		name_column			= builder.get_object ("queue_name")
+		links_column		= builder.get_object ("queue_links")
+		size_column			= builder.get_object ("queue_size")
+		downloaded_column	= builder.get_object ("queue_downloaded")
+		speed_column		= builder.get_object ("queue_speed")
+		eta_column			= builder.get_object ("queue_eta")
+		progress_column		= builder.get_object ("queue_progress")
 		
 		# create renderers
-		id_renderer = Gtk.CellRendererText()
-		name_renderer = Gtk.CellRendererText()
-		progress_renderer = Gtk.CellRendererProgress()
+		id_renderer			= Gtk.CellRendererText()
+		name_renderer		= Gtk.CellRendererText()
+		links_renderer		= Gtk.CellRendererText()
+		size_renderer		= Gtk.CellRendererText()
+		downloaded_renderer	= Gtk.CellRendererText()
+		speed_renderer		= Gtk.CellRendererText()
+		eta_renderer		= Gtk.CellRendererText()
+		progress_renderer	= Gtk.CellRendererProgress()
 		
 		# set column renderers
-		id.pack_start (id_renderer, True)
-		name.pack_start (name_renderer, True)
-		progress.pack_start (progress_renderer, True)
+		id_column.pack_start (id_renderer, True)
+		name_column.pack_start (name_renderer, True)
+		links_column.pack_start (links_renderer, True)
+		size_column.pack_start (size_renderer, True)
+		downloaded_column.pack_start (downloaded_renderer, True)
+		speed_column.pack_start (speed_renderer, True)
+		eta_column.pack_start (eta_renderer, True)
+		progress_column.pack_start (progress_renderer, True)
 		
-		id.set_cell_data_func (id_renderer, self.__render_id)
-		name.set_cell_data_func (name_renderer, self.__render_name)
-		progress.set_cell_data_func (progress_renderer, self.__render_progress)
+		id_column.set_cell_data_func (id_renderer, self.__render_id)
+		name_column.set_cell_data_func (name_renderer, self.__render_name)
+		links_column.set_cell_data_func (links_renderer, self.__render_links)
+		size_column.set_cell_data_func (size_renderer, self.__render_size)
+		downloaded_column.set_cell_data_func (downloaded_renderer, self.__render_downloaded)
+		speed_column.set_cell_data_func (speed_renderer, self.__render_speed)
+		eta_column.set_cell_data_func (eta_renderer, self.__render_eta)
+		progress_column.set_cell_data_func (progress_renderer, self.__render_progress)
 
 
 		# connect to ui events
@@ -73,11 +93,6 @@ class Queue (object):
 		# connect to client property events
 		client.queue.added += self.__on_queue_added
 		client.queue.changed += self.__on_queue_changed
-
-		# client.downloads.added += self.__on_downloads_added
-		# client.downloads.changed += self.__on_downloads_changed
-
-		# client.on_finished_added += self.__on_finished_added
 	
 
 	def __render_id (self, column, cell, model, iter, data):
@@ -87,12 +102,87 @@ class Queue (object):
 	def __render_name (self, column, cell, model, iter, data):
 		# get the item we are dealing with
 		item = model[iter][0]
-		cell.set_property ("markup", "<b>{0}</b>".format (item.name))
+		cell.set_property ("text", item.name)
+
+
+	def __render_links (self, column, cell, model, iter, data):
+		# get the item we are dealing with
+		item = model[iter][0]
+		cell.set_property ("text", "{0}/{0} completed".format (item.links_done, item.links_total))
+
+
+	def __render_size (self, column, cell, model, iter, data):
+		# get the item we are dealing with
+		item = model[iter][0]
+
+		total = utils.format_size (item.size_total)
+		cell.set_property ("text", total)
+
+
+	def __render_downloaded (self, column, cell, model, iter, data):
+		# get the item we are dealing with
+		item = model[iter][0]
+
+		if item.size_done > 0:
+			total = utils.format_size (item.size_done)
+			cell.set_property ("text", total)
+		else:
+			cell.set_property ("text", "")
+
+
+
+	def __render_speed (self, column, cell, model, iter, data):
+		# get the item we are dealing with
+		item = model[iter][0]
+
+		if item.links_downloading:
+			speed = 0
+			downloads = self.client.downloads.value
+
+			for link in item.links.itervalues():
+				if downloads.has_key (link.id):
+					speed += downloads[link.id].speed
+
+			speed = utils.format_size (speed)
+			cell.set_property ("text", "{0}/s".format (speed))
+
+		else:
+			cell.set_property ("text", "")
+
+
+	def __render_eta (self, column, cell, model, iter, data):
+		# get the item we are dealing with
+		item = model[iter][0]
+
+		if item.links_downloading:
+			eta = 0
+			downloads = self.client.downloads.value
+
+			for link in item.links.itervalues():
+				if downloads.has_key (link.id):
+					eta += downloads[link.id].eta
+
+			eta = utils.format_time (eta)
+			cell.set_property ("text", "{0}".format (eta))
+
+		else:
+			cell.set_property ("text", "")
 	
 	
 	def __render_progress (self, column, cell, model, iter, data):
 		item = model[iter][0]
-		cell.set_property ("value", item.downloads_percent)
+
+		percent = 0
+		downloads = self.client.downloads.value
+
+		for link in item.links.itervalues():
+			if downloads.has_key (link.id):
+				percent += downloads[link.id].percent
+
+			elif link.status == Link.Status.FINISHED:
+				percent += 100
+
+		cell.set_property ("value", percent / len(item.links))
 	
 	
 	def __on_queue_added (self, prop, package):
@@ -104,40 +194,6 @@ class Queue (object):
 
 	def __on_queue_changed (self, prop, package):
 		self.queue_tree.queue_draw()
-	
-
-	def __on_downloads_added (self, prop, download):
-		'''
-		Handler to show the current status of a download from the server
-		'''
-		for row in self.store:
-			for item in row.iterchildren():
-				if item[0].id == download.id:
-					item[1] = download
-
-
-	def __on_downloads_changed (self, prop, download):
-		'''
-		Handler to refresh the queue tree
-		'''
-		self.queue_tree.queue_draw()
-
-
-	def __on_downloads_removed (self, prop, download):
-		'''
-		Handler to remove downloads no longer active
-		'''
-		print download
-	
-
-	def __on_finished_added (self, package):
-		'''
-		Handler to show newly finished packages from the server
-		'''
-		parent = self.store.append (None, [package, None])
-		
-		for link in package.links.itervalues():
-			self.store.append (parent, [link, None])
 
 
 

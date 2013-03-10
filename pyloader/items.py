@@ -61,7 +61,6 @@ class Package (Item):
 		self.size_total = data.sizetotal
 
 		self.links = {link.fid: Link(link) for (link) in data.links}
-		self.downloads = {}
 
 
 
@@ -90,10 +89,6 @@ class Package (Item):
 	def links_waiting (self):
 		states = [Link.Status.WAITING]
 		return sum(1 for link in self.links.itervalues() if link.status in states)
-
-	@property
-	def downloads_percent (self):
-		return sum(download.percent for download in self.downloads.itervalues())
 	
 
 	def __update__ (self, val):

@@ -36,6 +36,7 @@ class Links (object):
 		self.client = client
 
 		self.tree = builder.get_object ("link_tree")
+		self.title = builder.get_object ("links_selected_package")
 
 		self.menu_failed = builder.get_object ("queue_link_failed")
 		self.menu_active = builder.get_object ("queue_link_active")
@@ -105,6 +106,8 @@ class Links (object):
 
 		for link in package.links.itervalues():
 			self.store.append ([link])
+
+		self.title.set_markup ("<big><b>{0}</b></big>".format (package.name))
 
 
 	def __render_icon (self, column, cell, model, iter, data):
@@ -259,11 +262,11 @@ class Links (object):
 		'''
 		if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:
 			# get the current selection to determine which popup to use
-			path, column, cell_x, cell_y = self.queue_tree.get_path_at_pos (event.x, event.y)
+			path, column, cell_x, cell_y = self.tree.get_path_at_pos (event.x, event.y)
 			iter = self.store.get_iter (path)
 
-			# show the right context
-			if iter and self.store[iter][0].is_link:
+			if iter:
+				# show the right context
 				link = self.store[iter][0]
 
 				if link.offline:
@@ -279,7 +282,7 @@ class Links (object):
 		'''
 		Handler to restart failed links
 		'''
-		selection = self.queue_tree.get_selection()
+		selection = self.tree.get_selection()
 		model, iter = selection.get_selected()
 
 		if iter != None:
@@ -291,7 +294,7 @@ class Links (object):
 		'''
 		Handler to abort active links
 		'''
-		selection = self.queue_tree.get_selection()
+		selection = self.tree.get_selection()
 		model, iter = selection.get_selected()
 
 		if iter != None:
