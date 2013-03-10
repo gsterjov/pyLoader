@@ -28,7 +28,7 @@ from event import Event
 from live_property import live_property
 from live_dict_property import live_dict_property
 
-from items import Package, Link, ActiveLink
+from items import Package, Link, Download
 
 
 
@@ -314,7 +314,7 @@ class Client (object):
 		downloads = {}
 		
 		for item in self.client.statusDownloads():
-			downloads[item.fid] = ActiveLink (item)
+			downloads[item.fid] = Download (item)
 
 		return downloads
 

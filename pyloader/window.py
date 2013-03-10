@@ -78,15 +78,13 @@ class MainWindow (object):
 		self.server_status = builder.get_object ("server_status")
 		self.queue_status = builder.get_object ("queue_status")
 		self.speed_status = builder.get_object ("speed_status")
+		self.space_status = builder.get_object ("space_status")
 		
 		# toolbar
 		self.connect_button = builder.get_object ("connect")
 		self.start_button = builder.get_object ("start")
 		self.stop_button = builder.get_object ("stop")
 		self.check_button = builder.get_object ("check")
-		
-		self.free_space = builder.get_object ("free_space")
-		self.server_version = builder.get_object ("server_version")
 		
 		self.state_context = self.statusbar.get_context_id ("Application state")
 		
@@ -169,8 +167,7 @@ class MainWindow (object):
 	# Server events
 	def __on_connected (self):
 		# display the server details
-		self.server_version.set_text ("v{0}".format(self.client.version))
-		self.free_space.set_text ("{0}".format(utils.format_size(self.client.free_space)))
+		self.space_status.set_text ("{0}".format(utils.format_size(self.client.free_space)))
 		
 		self.server_status.set_text (self.client.host)
 		self.server_status_image.set_from_stock (Gtk.STOCK_YES, Gtk.IconSize.MENU)

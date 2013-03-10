@@ -61,6 +61,7 @@ class Package (Item):
 		self.size_total = data.sizetotal
 
 		self.links = {link.fid: Link(link) for (link) in data.links}
+		self.downloads = {}
 
 
 
@@ -89,6 +90,10 @@ class Package (Item):
 	def links_waiting (self):
 		states = [Link.Status.WAITING]
 		return sum(1 for link in self.links.itervalues() if link.status in states)
+
+	@property
+	def downloads_percent (self):
+		return sum(download.percent for download in self.downloads.itervalues())
 	
 
 	def __update__ (self, val):
@@ -252,7 +257,7 @@ class Link (Item):
 
 
 
-class ActiveLink (Item):
+class Download (Item):
 	'''
 	A link currently being downloaded
 	'''
@@ -303,5 +308,5 @@ class ActiveLink (Item):
 	
 	
 	def __repr__ (self):
-		return "<ActiveLink id: {0}, size: {1}, speed: {2}, bytes_left: {3}, eta: {4}, wait_time: {5}>".format(
+		return "<Download id: {0}, size: {1}, speed: {2}, bytes_left: {3}, eta: {4}, wait_time: {5}>".format(
 			self.id, self.size, self.speed, self.bytes_left, self.eta, self.wait_time)

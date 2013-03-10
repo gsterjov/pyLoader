@@ -95,8 +95,8 @@ class DownloadBar (object):
 		self.downloads = builder.get_object ("downloads")
 		
 		# connect to server events
-		client.downloads.added += self.__on_download_added
-		client.downloads.changed += self.__on_download_changed
+		# client.downloads.added += self.__on_download_added
+		# client.downloads.changed += self.__on_download_changed
 	
 	
 	def show_connect_window (self):
