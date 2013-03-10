@@ -36,6 +36,9 @@ class Queue (object):
 		'''
 		self.client = client
 
+		# load the application settings
+		self.settings = Gio.Settings.new ("org.pyLoader.queue")
+
 		self.links = Links (builder, client)
 		self.tree = builder.get_object ("queue_tree")
 		
@@ -46,14 +49,14 @@ class Queue (object):
 		
 
 		# queue columns
-		order_column		= builder.get_object ("queue_order")
-		name_column			= builder.get_object ("queue_name")
-		links_column		= builder.get_object ("queue_links")
-		size_column			= builder.get_object ("queue_size")
-		downloaded_column	= builder.get_object ("queue_downloaded")
-		speed_column		= builder.get_object ("queue_speed")
-		eta_column			= builder.get_object ("queue_eta")
-		progress_column		= builder.get_object ("queue_progress")
+		self.order_column		= builder.get_object ("queue_order")
+		self.name_column		= builder.get_object ("queue_name")
+		self.links_column		= builder.get_object ("queue_links")
+		self.size_column		= builder.get_object ("queue_size")
+		self.downloaded_column	= builder.get_object ("queue_downloaded")
+		self.speed_column		= builder.get_object ("queue_speed")
+		self.eta_column			= builder.get_object ("queue_eta")
+		self.progress_column	= builder.get_object ("queue_progress")
 		
 		# create renderers
 		order_renderer		= Gtk.CellRendererText()
@@ -66,23 +69,23 @@ class Queue (object):
 		progress_renderer	= Gtk.CellRendererProgress()
 		
 		# set column renderers
-		order_column.pack_start (order_renderer, True)
-		name_column.pack_start (name_renderer, True)
-		links_column.pack_start (links_renderer, True)
-		size_column.pack_start (size_renderer, True)
-		downloaded_column.pack_start (downloaded_renderer, True)
-		speed_column.pack_start (speed_renderer, True)
-		eta_column.pack_start (eta_renderer, True)
-		progress_column.pack_start (progress_renderer, True)
+		self.order_column.pack_start (order_renderer, True)
+		self.name_column.pack_start (name_renderer, True)
+		self.links_column.pack_start (links_renderer, True)
+		self.size_column.pack_start (size_renderer, True)
+		self.downloaded_column.pack_start (downloaded_renderer, True)
+		self.speed_column.pack_start (speed_renderer, True)
+		self.eta_column.pack_start (eta_renderer, True)
+		self.progress_column.pack_start (progress_renderer, True)
 		
-		order_column.set_cell_data_func (order_renderer, self.__render_order)
-		name_column.set_cell_data_func (name_renderer, self.__render_name)
-		links_column.set_cell_data_func (links_renderer, self.__render_links)
-		size_column.set_cell_data_func (size_renderer, self.__render_size)
-		downloaded_column.set_cell_data_func (downloaded_renderer, self.__render_downloaded)
-		speed_column.set_cell_data_func (speed_renderer, self.__render_speed)
-		eta_column.set_cell_data_func (eta_renderer, self.__render_eta)
-		progress_column.set_cell_data_func (progress_renderer, self.__render_progress)
+		self.order_column.set_cell_data_func (order_renderer, self.__render_order)
+		self.name_column.set_cell_data_func (name_renderer, self.__render_name)
+		self.links_column.set_cell_data_func (links_renderer, self.__render_links)
+		self.size_column.set_cell_data_func (size_renderer, self.__render_size)
+		self.downloaded_column.set_cell_data_func (downloaded_renderer, self.__render_downloaded)
+		self.speed_column.set_cell_data_func (speed_renderer, self.__render_speed)
+		self.eta_column.set_cell_data_func (eta_renderer, self.__render_eta)
+		self.progress_column.set_cell_data_func (progress_renderer, self.__render_progress)
 
 
 		# connect to ui events
@@ -94,7 +97,29 @@ class Queue (object):
 		# connect to client property events
 		client.queue.added += self.__on_queue_added
 		client.queue.changed += self.__on_queue_changed
-	
+
+
+		# load the queue column settings
+		self.order_column.set_fixed_width (self.settings.get_uint ("column-order-size"))
+		self.name_column.set_fixed_width (self.settings.get_uint ("column-name-size"))
+		self.links_column.set_fixed_width (self.settings.get_uint ("column-links-size"))
+		self.size_column.set_fixed_width (self.settings.get_uint ("column-size-size"))
+		self.downloaded_column.set_fixed_width (self.settings.get_uint ("column-downloaded-size"))
+		self.speed_column.set_fixed_width (self.settings.get_uint ("column-speed-size"))
+		self.eta_column.set_fixed_width (self.settings.get_uint ("column-eta-size"))
+		self.progress_column.set_fixed_width (self.settings.get_uint ("column-progress-size"))
+
+
+	def save_state (self):
+		self.settings.set_uint ("column-order-size", self.order_column.get_width())
+		self.settings.set_uint ("column-name-size", self.name_column.get_width())
+		self.settings.set_uint ("column-links-size", self.links_column.get_width())
+		self.settings.set_uint ("column-size-size", self.size_column.get_width())
+		self.settings.set_uint ("column-downloaded-size", self.downloaded_column.get_width())
+		self.settings.set_uint ("column-speed-size", self.speed_column.get_width())
+		self.settings.set_uint ("column-eta-size", self.eta_column.get_width())
+		self.settings.set_uint ("column-progress-size", self.progress_column.get_width())
+
 
 	def __render_order (self, column, cell, model, iter, data):
 		# get the item we are dealing with

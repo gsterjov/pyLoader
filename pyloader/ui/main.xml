@@ -218,6 +218,8 @@
                             <child>
                               <object class="GtkTreeViewColumn" id="queue_order">
                                 <property name="resizable">True</property>
+                                <property name="sizing">fixed</property>
+                                <property name="fixed_width">40</property>
                                 <property name="title" translatable="yes">#</property>
                                 <property name="clickable">True</property>
                                 <property name="reorderable">True</property>
@@ -227,8 +229,9 @@
                             <child>
                               <object class="GtkTreeViewColumn" id="queue_name">
                                 <property name="resizable">True</property>
+                                <property name="sizing">fixed</property>
+                                <property name="fixed_width">300</property>
                                 <property name="title" translatable="yes">Name</property>
-                                <property name="expand">True</property>
                                 <property name="clickable">True</property>
                                 <property name="reorderable">True</property>
                               </object>
@@ -236,6 +239,8 @@
                             <child>
                               <object class="GtkTreeViewColumn" id="queue_links">
                                 <property name="resizable">True</property>
+                                <property name="sizing">fixed</property>
+                                <property name="fixed_width">100</property>
                                 <property name="title" translatable="yes">Links Completed</property>
                                 <property name="clickable">True</property>
                                 <property name="reorderable">True</property>
@@ -244,6 +249,8 @@
                             <child>
                               <object class="GtkTreeViewColumn" id="queue_size">
                                 <property name="resizable">True</property>
+                                <property name="sizing">fixed</property>
+                                <property name="fixed_width">100</property>
                                 <property name="title" translatable="yes">Size</property>
                                 <property name="clickable">True</property>
                                 <property name="reorderable">True</property>
@@ -252,6 +259,8 @@
                             <child>
                               <object class="GtkTreeViewColumn" id="queue_downloaded">
                                 <property name="resizable">True</property>
+                                <property name="sizing">fixed</property>
+                                <property name="fixed_width">100</property>
                                 <property name="title" translatable="yes">Downloaded</property>
                                 <property name="clickable">True</property>
                                 <property name="reorderable">True</property>
@@ -260,6 +269,8 @@
                             <child>
                               <object class="GtkTreeViewColumn" id="queue_speed">
                                 <property name="resizable">True</property>
+                                <property name="sizing">fixed</property>
+                                <property name="fixed_width">100</property>
                                 <property name="title" translatable="yes">Speed</property>
                                 <property name="clickable">True</property>
                                 <property name="reorderable">True</property>
@@ -268,6 +279,8 @@
                             <child>
                               <object class="GtkTreeViewColumn" id="queue_progress">
                                 <property name="resizable">True</property>
+                                <property name="sizing">fixed</property>
+                                <property name="fixed_width">100</property>
                                 <property name="title" translatable="yes">Progress</property>
                                 <property name="clickable">True</property>
                                 <property name="reorderable">True</property>
@@ -276,6 +289,8 @@
                             <child>
                               <object class="GtkTreeViewColumn" id="queue_eta">
                                 <property name="resizable">True</property>
+                                <property name="sizing">fixed</property>
+                                <property name="fixed_width">100</property>
                                 <property name="title" translatable="yes">ETA</property>
                                 <property name="clickable">True</property>
                                 <property name="reorderable">True</property>

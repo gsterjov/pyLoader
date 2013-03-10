@@ -136,6 +136,8 @@ class MainWindow (object):
 			w, h = window.get_size()
 			self.settings.set_value ("window-size", GLib.Variant ('ai', [w, h]))
 
+			self.queue.save_state();
+
 			Gtk.main_quit()
 
 		except Exception as e:

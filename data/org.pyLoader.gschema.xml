@@ -31,4 +31,63 @@
 			<description>The last maximised state of the window to be used again on next startup.</description>
 		</key>
 	</schema>
+
+	<schema id="org.pyLoader.queue" path="/org/pyLoader/queue/">
+		<key type="as" name="column-order">
+			<default>['order','name','links','size','downloaded','speed','progress','eta']</default>
+			<summary>The order of the queue columns</summary>
+			<description>This is an array of the column names to be added sequentially into the queue tree header.</description>
+		</key>
+		<key type="s" name="column-sort">
+			<default>'order'</default>
+			<summary>The column to sort</summary>
+			<description>The column name to be sorted.</description>
+		</key>
+		<key type="s" name="column-sort-order">
+			<default>"ASC"</default>
+			<summary>The sort order of the sorted column</summary>
+			<description>The sort order, either ASC or DESC, to sort the column by.</description>
+		</key>
+
+		<key type="u" name="column-order-size">
+			<default>40</default>
+			<summary>The size of the order column</summary>
+			<description></description>
+		</key>
+		<key type="u" name="column-name-size">
+			<default>300</default>
+			<summary>The size of the name column</summary>
+			<description></description>
+		</key>
+		<key type="u" name="column-links-size">
+			<default>100</default>
+			<summary>The size of the links completed column</summary>
+			<description></description>
+		</key>
+		<key type="u" name="column-size-size">
+			<default>100</default>
+			<summary>The size of the size column</summary>
+			<description></description>
+		</key>
+		<key type="u" name="column-downloaded-size">
+			<default>100</default>
+			<summary>The size of the downloaded column</summary>
+			<description></description>
+		</key>
+		<key type="u" name="column-speed-size">
+			<default>100</default>
+			<summary>The size of the speed column</summary>
+			<description></description>
+		</key>
+		<key type="u" name="column-progress-size">
+			<default>100</default>
+			<summary>The size of the progress column</summary>
+			<description></description>
+		</key>
+		<key type="u" name="column-eta-size">
+			<default>100</default>
+			<summary>The size of the ETA column</summary>
+			<description></description>
+		</key>
+	</schema>
 </schemalist>
