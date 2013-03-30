@@ -85,6 +85,7 @@ class MainWindow (object):
 		self.start_button = builder.get_object ("start")
 		self.stop_button = builder.get_object ("stop")
 		self.check_button = builder.get_object ("check")
+		self.clear_button = builder.get_object ("clear")
 		
 		self.state_context = self.statusbar.get_context_id ("Application state")
 		
@@ -96,6 +97,7 @@ class MainWindow (object):
 		self.start_button.connect ("clicked", self.__on_start_clicked)
 		self.stop_button.connect ("clicked", self.__on_stop_clicked)
 		self.check_button.connect ("clicked", self.__on_check_clicked)
+		self.clear_button.connect ("clicked", self.__on_clear_clicked)
 		
 		# connect to server events
 		self.client.on_connected += self.__on_connected
@@ -164,6 +166,9 @@ class MainWindow (object):
 	
 	def __on_check_clicked (self, button):
 		self.collector.check_all_items()
+	
+	def __on_clear_clicked (self, button):
+		self.client.clear_finished()
 	
 	
 	# Server events

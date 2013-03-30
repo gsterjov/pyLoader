@@ -140,6 +140,9 @@ class Links (object):
 		elif item.offline:
 			cell.set_property ("stock-id", Gtk.STOCK_DIALOG_ERROR)
 
+		else:
+			cell.set_property ("stock-id", None)
+
 		cell.set_property ("stock-size", Gtk.IconSize.BUTTON)
 
 
@@ -200,15 +203,26 @@ class Links (object):
 		downloads = self.client.downloads.value
 		text = ""
 
+		# link is active
 		if downloads.has_key (item.id):
 			download = downloads[item.id]
+			
+			# link is downloading
+			if item.status == Link.Status.DOWNLOADING:
+				speed = utils.format_size (download.speed)
+				eta = utils.format_time (download.eta)
+				size = utils.format_size (download.size)
+				downloaded = utils.format_size (download.bytes_transferred)
 
-			speed = utils.format_size (download.speed)
-			eta = utils.format_time (download.eta)
-			size = utils.format_size (download.size)
-			downloaded = utils.format_size (download.bytes_transferred)
+				cell.set_property ("markup", "<small><b>{0}</b> of <b>{1}</b> downloaded  @ <b>{2}/s</b>  with {3} remaining</small>".format (downloaded, size, speed, eta))
+			
+			# link is pending some action
+			elif item.status == Link.Status.WAITING:
+				# get the current wait time
+				remaining = download.time_left if download.time_left > 0 else 0
+				wait_time = utils.format_time (remaining)
+				cell.set_property ("markup", "<small>{0} left</small>".format (wait_time))
 
-			cell.set_property ("markup", "<small><b>{0}</b> of <b>{1}</b> downloaded  @ <b>{2}/s</b>  with {3} remaining</small>".format (downloaded, size, speed, eta))
 
 		elif item.status == Link.Status.FINISHED:
 			size = utils.format_size (item.size)

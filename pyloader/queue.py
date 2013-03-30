@@ -89,7 +89,7 @@ class Queue (object):
 
 
 		# connect to ui events
-		self.tree.connect ("button-press-event", self.__on_button_press)
+		# self.tree.connect ("button-press-event", self.__on_button_press)
 
 		selection = self.tree.get_selection()
 		selection.connect ("changed", self.__on_selection_changed)
@@ -97,6 +97,7 @@ class Queue (object):
 		# connect to client property events
 		client.queue.added += self.__on_queue_added
 		client.queue.changed += self.__on_queue_changed
+		client.downloads.changed += self.__on_downloads_changed
 
 
 		# load the queue column settings
@@ -182,6 +183,7 @@ class Queue (object):
 		# get the item we are dealing with
 		item = model[iter][0]
 
+		# link is active
 		if item.links_downloading:
 			eta = 0
 			downloads = self.client.downloads.value
@@ -191,10 +193,27 @@ class Queue (object):
 					eta += downloads[link.id].eta
 
 			eta = utils.format_time (eta)
-			cell.set_property ("text", "{0}".format (eta))
+			cell.set_property ("markup", eta)
 
+		# link is waiting
+		elif not item.links_downloading and item.links_waiting:
+			eta = None
+			downloads = self.client.downloads.value
+
+			for link in item.links.itervalues():
+				if downloads.has_key (link.id):
+					time_left = downloads[link.id].time_left
+
+					if not eta: eta = time_left
+					elif time_left < eta: eta = time_left
+
+			eta = eta if eta > 0 else 0
+			eta = utils.format_time (eta)
+			cell.set_property ("markup", "<small>Waiting - {0}</small>".format (eta))
+
+		# inactive link
 		else:
-			cell.set_property ("text", "")
+			cell.set_property ("markup", "")
 	
 	
 	def __render_progress (self, column, cell, model, iter, data):
@@ -230,7 +249,11 @@ class Queue (object):
 
 
 	def __on_queue_changed (self, prop, package):
-		self.queue_tree.queue_draw()
+		self.tree.queue_draw()
+
+
+	def __on_downloads_changed (self, property, value):
+		self.tree.queue_draw()
 
 
 

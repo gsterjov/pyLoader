@@ -67,25 +67,10 @@ class Client (object):
 	Events:
 		on_connected: Raised when a connection to the backend server is made
 		on_disconnected: Raised when the connection has been severed
-		on_queue_added: Raised when a package has been added to the queue
-		on_package_added: Raised when a package has been added to the collector
-
-		on_link_status: Raised when an online check status has changed for a link
 	'''
 	
 	on_connected = None
 	on_disconnected = None
-
-	on_queue_added = None
-	on_queue_removed = None
-	on_active_added = None
-	on_active_removed = None
-	on_collector_added = None
-	on_collector_removed = None
-	on_finished_added = None
-
-	on_active_changed = None
-	on_link_checked = None
 	
 	
 	def __init__ (self):
@@ -96,17 +81,6 @@ class Client (object):
 		
 		self.on_connected = Event()
 		self.on_disconnected = Event()
-
-		self.on_queue_added = Event()
-		self.on_queue_removed = Event()
-		self.on_active_added = Event()
-		self.on_active_removed = Event()
-		self.on_collector_added = Event()
-		self.on_collector_removed = Event()
-		self.on_finished_added = Event()
-
-		self.on_active_changed = Event()
-		self.on_link_checked = Event()
 		
 		# set all live properties in this class for polling
 		self.properties_to_poll = [
@@ -115,12 +89,9 @@ class Client (object):
 			self.links_total,
 			self.speed,
 		]
-		
-		self._queue_cache = {}
-		self._active_cache = {}
-		self._collector_cache = {}
-		self._finished_cache = {}
-		self._online_check_cache = {}
+
+		self.tasks = []
+
 
 
 	def connect (self, host, port, username, password):
@@ -293,6 +264,20 @@ class Client (object):
 	
 	@live_property
 	@login_required
+	def collector (self):
+		'''
+		A dict of packages currently in the collector
+		'''
+		packages = {}
+		
+		for item in self.client.getCollectorData():
+			packages[item.pid] = Package (item)
+
+		return packages
+	
+	
+	@live_property
+	@login_required
 	def queue (self):
 		'''
 		A dict of packages currently in the queue
@@ -369,9 +354,14 @@ class Client (object):
 		urls = items.keys()
 		results = self.client.checkOnlineStatus (urls)
 
-		# update the first results
-		self._online_check_cache[results.rid] = items
-		self._update_online_check_cache (results.rid, results)
+		self.tasks.append (results.rid)
+
+
+	def clear_finished (self):
+		'''
+		Clears all the finished packages and removes them from the list.
+		'''
+		ids = self.client.deleteFinished()
 
 
 	def answer_captcha (self, captcha, answer):
@@ -381,54 +371,25 @@ class Client (object):
 		self.client.setCaptchaResult (captcha.tid, answer)
 
 
-	def poll_collector (self):
+
+	def poll_tasks (self):
 		'''
-		Poll the backend collector for new packages or changes to existing ones
+		Poll the backend for results on a previously queued online check task
 		'''
-		collector = self.client.getCollector()
-		ids = []
-		
-		# add packages to the cache
-		for item in collector:
-			ids.append (item.pid)
+		finished = []
 
-			# update package
-			if self._collector_cache.has_key (item.pid):
-				pass
-
-			elif self._finished_cache.has_key (item.pid):
-				pass
-			
-			# add package
-			else:
-				package = Package (self.client, item)
-
-				# pyload puts finished packages back into the collector for some reason
-				if package.finished:
-					self._finished_cache[item.pid] = package
-					self.on_finished_added (package)
-
-				else:
-					self._collector_cache[item.pid] = package
-					self.on_collector_added (package)
-		
-
-		# remove packages from the cache
-		for package_id, package in self._collector_cache.items():
-			if not package_id in ids:
-				self.on_collector_removed (package)
-				del self._collector_cache[package_id]
-
-		return True
-
-
-	def poll_online_checks (self):
-		'''
-		Poll the backend for results on a previously queue online check task
-		'''
-		for rid, data in self._online_check_cache.items():
+		for rid in self.tasks:
 			results = self.client.pollResults (rid)
-			self._update_online_check_cache (rid, results)
+			print results
+			status = Link.Status (3)
+			print status.value
+
+			if results.rid == -1:
+				finished.append (rid)
+
+		for rid in finished:
+			self.tasks.remove (rid)
+
 	
 	
 	def poll (self):
@@ -439,12 +400,13 @@ class Client (object):
 		for prop in self.properties_to_poll:
 			prop.update()
 		
+		self.collector.update()
 		self.queue.update()
 		self.downloads.update()
 		self.captchas.update()
 
 		# self.poll_collector()
-		# self.poll_online_checks()
+		self.poll_tasks()
 		
 		return True
 
