@@ -43,6 +43,8 @@ class Links (object):
 		self.menu_active = builder.get_object ("menu_link_active")
 
 		menu_item_check = builder.get_object ("menu_link_check")
+		menu_item_ready_copy_url = builder.get_object ("menu_link_ready_copy_url")
+
 		menu_item_restart = builder.get_object ("menu_link_restart")
 		menu_item_abort = builder.get_object ("menu_link_abort")
 
@@ -91,6 +93,8 @@ class Links (object):
 		self.tree.connect ("button-press-event", self.__on_button_press)
 
 		menu_item_check.connect ("activate", self.__on_check_link)
+		menu_item_ready_copy_url.connect ("activate", self.__on_copy_url)
+
 		menu_item_restart.connect ("activate", self.__on_restart_link)
 		menu_item_abort.connect ("activate", self.__on_abort_link)
 
@@ -265,7 +269,6 @@ class Links (object):
 	def __render_status (self, column, cell, model, iter, data):
 		# get the item we are dealing with
 		item = model[iter][0]
-		print item
 		cell.set_property ("markup", "<small>{0}</small>".format (item.status.value))
 
 
@@ -300,18 +303,6 @@ class Links (object):
 		return False
 
 
-	def __on_restart_link (self, userdata):
-		'''
-		Handler to restart failed links
-		'''
-		selection = self.tree.get_selection()
-		model, iter = selection.get_selected()
-
-		if iter != None:
-			link = model[iter][0]
-			self.client.restart_link (link)
-
-
 	def __on_check_link (self, userdata):
 		'''
 		Handler to check the online status of links
@@ -322,6 +313,31 @@ class Links (object):
 		if iter != None:
 			link = model[iter][0]
 			self.client.check_online_status ([link])
+
+
+	def __on_copy_url (self, userdata):
+		'''
+		Handler to copy the URL of the selected link
+		'''
+		selection = self.tree.get_selection()
+		model, iter = selection.get_selected()
+
+		if iter != None:
+			link = model[iter][0]
+			clipboard = Gtk.Clipboard.get (Gdk.SELECTION_CLIPBOARD)
+			clipboard.set_text (link.url, -1)
+
+
+	def __on_restart_link (self, userdata):
+		'''
+		Handler to restart failed links
+		'''
+		selection = self.tree.get_selection()
+		model, iter = selection.get_selected()
+
+		if iter != None:
+			link = model[iter][0]
+			self.client.restart_link (link)
 
 
 	def __on_abort_link (self, userdata):
