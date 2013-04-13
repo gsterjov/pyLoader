@@ -90,7 +90,7 @@ class Client (object):
 			self.speed,
 		]
 
-		self.tasks = []
+		self.tasks = {}
 
 
 
@@ -354,7 +354,7 @@ class Client (object):
 		urls = items.keys()
 		results = self.client.checkOnlineStatus (urls)
 
-		self.tasks.append (results.rid)
+		self.tasks[results.rid] = items
 
 
 	def clear_finished (self):
@@ -378,17 +378,21 @@ class Client (object):
 		'''
 		finished = []
 
-		for rid in self.tasks:
+		for rid, links in self.tasks.iteritems():
 			results = self.client.pollResults (rid)
-			print results
-			status = Link.Status (3)
-			print status.value
 
 			if results.rid == -1:
 				finished.append (rid)
 
+				for url, result in results.data.iteritems():
+					link = links[url]
+					link.name = result.name
+					link.size = result.size
+					link.plugin = result.plugin
+					link.status = Link.Status (result.status)
+
 		for rid in finished:
-			self.tasks.remove (rid)
+			del self.tasks[rid]
 
 	
 	
@@ -405,28 +409,6 @@ class Client (object):
 		self.downloads.update()
 		self.captchas.update()
 
-		# self.poll_collector()
 		self.poll_tasks()
 		
 		return True
-
-
-	def _update_online_check_cache (self, rid, results):
-		'''
-		Helper method to process the online check results and update
-		the associated items and cache
-		'''
-		links = self._online_check_cache[rid]
-		
-		for url, result in results.data.iteritems():
-			link = links[url]
-
-			link.size = result.size
-			link.name = result.name
-			link.plugin = result.plugin
-			link.status = Link.Status (result.status)
-
-		self.on_link_checked ()
-
-		if results.rid == -1:
-			del self._online_check_cache[rid]

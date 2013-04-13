@@ -29,26 +29,21 @@
       </object>
     </child>
   </object>
+  <object class="GtkImage" id="image3">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-network</property>
+  </object>
   <object class="GtkImage" id="image4">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="stock">gtk-add</property>
     <property name="icon-size">1</property>
   </object>
-  <object class="GtkImage" id="image5">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="stock">gtk-goto-last</property>
-  </object>
   <object class="GtkImage" id="image6">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="stock">gtk-refresh</property>
-  </object>
-  <object class="GtkImage" id="image7">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="stock">gtk-media-play</property>
   </object>
   <object class="GtkImage" id="image8">
     <property name="visible">True</property>
@@ -700,34 +695,16 @@
       </object>
     </child>
   </object>
-  <object class="GtkMenu" id="queue_link_menu">
+  <object class="GtkMenu" id="menu_link_ready">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <child>
-      <object class="GtkImageMenuItem" id="queue_link_move">
-        <property name="label" translatable="yes">Move to collector</property>
+      <object class="GtkImageMenuItem" id="menu_link_check">
+        <property name="label" translatable="yes">Check Online Status</property>
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="image">image5</property>
+        <property name="image">image3</property>
         <property name="use_stock">False</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkImageMenuItem" id="queue_link_resume">
-        <property name="label" translatable="yes">Resume</property>
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="image">image7</property>
-        <property name="use_stock">False</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkImageMenuItem" id="queue_link_pause">
-        <property name="label">gtk-media-pause</property>
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="use_underline">True</property>
-        <property name="use_stock">True</property>
       </object>
     </child>
   </object>

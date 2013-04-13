@@ -38,9 +38,11 @@ class Links (object):
 		self.tree = builder.get_object ("link_tree")
 		self.title = builder.get_object ("links_selected_package")
 
+		self.menu_ready = builder.get_object ("menu_link_ready")
 		self.menu_failed = builder.get_object ("menu_link_failed")
 		self.menu_active = builder.get_object ("menu_link_active")
 
+		menu_item_check = builder.get_object ("menu_link_check")
 		menu_item_restart = builder.get_object ("menu_link_restart")
 		menu_item_abort = builder.get_object ("menu_link_abort")
 
@@ -87,6 +89,8 @@ class Links (object):
 
 		# connect to ui events
 		self.tree.connect ("button-press-event", self.__on_button_press)
+
+		menu_item_check.connect ("activate", self.__on_check_link)
 		menu_item_restart.connect ("activate", self.__on_restart_link)
 		menu_item_abort.connect ("activate", self.__on_abort_link)
 
@@ -261,6 +265,7 @@ class Links (object):
 	def __render_status (self, column, cell, model, iter, data):
 		# get the item we are dealing with
 		item = model[iter][0]
+		print item
 		cell.set_property ("markup", "<small>{0}</small>".format (item.status.value))
 
 
@@ -289,6 +294,9 @@ class Links (object):
 				elif link.active:
 					self.menu_active.popup (None, None, None, None, event.button, event.time)
 
+				else:
+					self.menu_ready.popup (None, None, None, None, event.button, event.time)
+
 		return False
 
 
@@ -302,6 +310,18 @@ class Links (object):
 		if iter != None:
 			link = model[iter][0]
 			self.client.restart_link (link)
+
+
+	def __on_check_link (self, userdata):
+		'''
+		Handler to check the online status of links
+		'''
+		selection = self.tree.get_selection()
+		model, iter = selection.get_selected()
+
+		if iter != None:
+			link = model[iter][0]
+			self.client.check_online_status ([link])
 
 
 	def __on_abort_link (self, userdata):

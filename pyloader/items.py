@@ -248,7 +248,7 @@ class Link (Item):
 	
 	def __repr__ (self):
 		return "<Link id: {0}, name: {1}, url: {2}, size: {3}, status: {4}>".format(
-			self.id, self.name, self.url, self.size, self.status)
+			self.id, self.name, self.url, self.size, self.status.value)
 
 
 
