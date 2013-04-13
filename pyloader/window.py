@@ -178,6 +178,9 @@ class MainWindow (object):
 		
 		self.server_status.set_text (self.client.host)
 		self.server_status_image.set_from_stock (Gtk.STOCK_YES, Gtk.IconSize.MENU)
+
+		self.start_button.set_sensitive (self.client.paused)
+		self.stop_button.set_sensitive (not self.client.paused)
 		
 		# periodically poll the client for any property changes
 		GLib.timeout_add (500, self.client.poll)
