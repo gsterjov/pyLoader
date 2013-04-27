@@ -35,7 +35,7 @@ class Collector (object):
 		'''
 		self.client = client
 
-		self.collector_tree = builder.get_object ("collector_tree")
+		self.tree = builder.get_object ("collector_tree")
 		self.package_menu = builder.get_object ("collector_package_menu")
 
 		menu_item_add = builder.get_object ("collector_package_add")
@@ -47,7 +47,7 @@ class Collector (object):
 		
 		# create the item store (packages and links)
 		self.store = Gtk.TreeStore (Item.__gtype__)
-		self.collector_tree.set_model (self.store)
+		self.tree.set_model (self.store)
 		
 		# create renderers
 		name_renderer	= Gtk.CellRendererText()
@@ -64,7 +64,7 @@ class Collector (object):
 		icon_column.set_cell_data_func (icon_renderer, self.__render_icon)
 
 		# connect to ui events
-		self.collector_tree.connect ("button-press-event", self.__on_button_press)
+		self.tree.connect ("button-press-event", self.__on_button_press)
 		menu_item_add.connect ("activate", self.__on_add_to_queue)
 
 		# connect to client property events
@@ -96,7 +96,7 @@ class Collector (object):
 		
 		# render as a package
 		if item.is_package:
-			cell.set_property ("markup", "{0}".format(item.name))
+			cell.set_property ("markup", "<b>{0}</b>".format(item.name))
 		
 		# render as a link
 		elif item.is_link:
@@ -117,7 +117,7 @@ class Collector (object):
 		item = model[iter][0]
 		
 		if item.is_package:
-			cell.set_property ("markup", "<small>{0}/{1} online</small>".format (item.links_online, item.links_total))
+			cell.set_property ("markup", "<small><b>{0}/{1} online</b></small>".format (item.links_online, item.links_total))
 		
 		elif item.is_link:
 			# get the state of the link
@@ -154,6 +154,9 @@ class Collector (object):
 		
 		for link in package.links.itervalues():
 			self.store.append (parent, [link])
+		
+		path = self.store.get_path (parent)
+		self.tree.expand_row (path, False)
 	
 	
 	def __on_collector_removed (self, package):
@@ -174,7 +177,7 @@ class Collector (object):
 		'''
 		Handler to update the status of links being checked
 		'''
-		self.collector_tree.queue_draw()
+		self.tree.queue_draw()
 
 
 
@@ -184,7 +187,7 @@ class Collector (object):
 		'''
 		if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:
 			# get the current selection to determine which popup to use
-			selection = self.collector_tree.get_selection()
+			selection = self.tree.get_selection()
 			model, iter = selection.get_selected()
 
 			if iter and model[iter][0].is_package:
@@ -197,7 +200,7 @@ class Collector (object):
 		'''
 		Handler to move items in the collector to the queue
 		'''
-		selection = self.collector_tree.get_selection()
+		selection = self.tree.get_selection()
 		model, iter = selection.get_selected()
 
 		if iter != None:
