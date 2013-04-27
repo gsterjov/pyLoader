@@ -18,7 +18,7 @@
 
 import logging
 
-from backends.websocket import WebsocketBackend
+from remote.websocket_client import WebsocketClient
 
 from event import Event
 from live_property import live_property
@@ -73,7 +73,7 @@ class Client (object):
 		'''
 		Constructor
 		'''
-		self.backend = WebsocketBackend()
+		self.client = WebsocketClient()
 		self.__connected = False
 		
 		self.on_connected = Event()
@@ -105,7 +105,7 @@ class Client (object):
 		url = "ws://{0}:{1}/api".format (host, port)
 		
 		try:
-			self.backend.open (url)
+			self.client.open (url)
 			logging.info ("Connected to {0}:{1}".format(host, port))
 		
 		except:
@@ -113,7 +113,7 @@ class Client (object):
 			raise ConnectionFailed
 		
 
-		self.backend.login (username, password)
+		self.client.login (username, password)
 		self.__connected = True
 
 		logging.info ("Server version: {0}".format(self.version))
@@ -171,8 +171,9 @@ class Client (object):
 		'''
 		The amount of links currently active
 		'''
-		status = self.client.statusServer()
-		return status.active
+		status = self.client.getServerStatus()
+		return 0
+		# return status['active']
 	
 	@live_property
 	@login_required
@@ -180,8 +181,8 @@ class Client (object):
 		'''
 		The amount of links currently waiting
 		'''
-		status = self.client.statusServer()
-		return status.queue
+		status = self.client.getServerStatus()
+		return status['linksqueue']
 	
 	@live_property
 	@login_required
@@ -189,8 +190,8 @@ class Client (object):
 		'''
 		The total amount of links in the queue
 		'''
-		status = self.client.statusServer()
-		return status.total
+		status = self.client.getServerStatus()
+		return status['linkstotal']
 	
 	@live_property
 	@login_required
@@ -198,8 +199,8 @@ class Client (object):
 		'''
 		The current download speed in bytes
 		'''
-		status = self.client.statusServer()
-		return status.speed
+		status = self.client.getServerStatus()
+		return status['speed']
 	
 	@property
 	@login_required
@@ -207,8 +208,8 @@ class Client (object):
 		'''
 		Whether or not the queue is currently paused
 		'''
-		status = self.client.statusServer()
-		return status.pause
+		status = self.client.getServerStatus()
+		return status['paused']
 	
 	@property
 	@login_required
@@ -216,8 +217,8 @@ class Client (object):
 		'''
 		Whether or not downloading is enabled
 		'''
-		status = self.client.statusServer()
-		return status.download
+		status = self.client.getServerStatus()
+		return status['download']
 	
 	@property
 	@login_required
@@ -225,8 +226,8 @@ class Client (object):
 		'''
 		Whether or not the downloader will reconnect when needed
 		'''
-		status = self.client.statusServer()
-		return status.reconnect
+		status = self.client.getServerStatus()
+		return status['reconnect']
 	
 	
 	@login_required

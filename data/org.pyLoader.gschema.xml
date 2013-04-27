@@ -16,6 +16,11 @@
 			<summary>Automatically connect on startup</summary>
 			<description>Whether or not to connect to the saved pyLoad server when the app loads up.</description>
 		</key>
+		<key type="s" name="username">
+			<default>""</default>
+			<summary>The username to login with</summary>
+			<description>The username will be used to pull the password from the keyring and log in to the pyload server.</description>
+		</key>
 	</schema>
 
 	<schema id="org.pyLoader.ui" path="/org/pyLoader/ui/">

@@ -16,6 +16,8 @@
 #    along with pyLoader.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import keyring
+
 from pkg_resources import Requirement, resource_filename
 from gi.repository import Gtk, Gio
 
@@ -54,6 +56,12 @@ class ConnectWindow (object):
 		self.host.set_text (self.settings.get_string ("host"))
 		self.port.set_value (self.settings.get_uint ("port"))
 		self.autoconnect.set_active (self.settings.get_boolean ("autoconnect"))
+		self.username.set_text (self.settings.get_string ("username"))
+
+		# load the password from the keyring
+		key = keyring.get_keyring()
+		password = key.get_password ("pyLoader", self.username.get_text())
+		if password: self.password.set_text (password)
 	
 	
 	def run (self):
@@ -88,5 +96,9 @@ class ConnectWindow (object):
 			self.settings.set_string ("host", self.host.get_text())
 			self.settings.set_uint ("port", self.port.get_value_as_int())
 			self.settings.set_boolean ("autoconnect", self.autoconnect.get_active())
+			self.settings.set_string ("username", self.username.get_text())
+
+			key = keyring.get_keyring()
+			key.set_password ("pyLoader", self.username.get_text(), self.password.get_text())
 
 			self.window.response (Gtk.ResponseType.OK)

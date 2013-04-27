@@ -19,8 +19,6 @@
 from time import time
 from gi.repository import GObject
 
-from pyload.ttypes import DownloadStatus
-
 
 class Item (GObject.Object):
 	'''
@@ -149,21 +147,36 @@ class Link (Item):
 		'''
 		The various states that a link can find itself in
 		'''
-		STARTING		= DownloadStatus.Starting
-		DECRYPTING		= DownloadStatus.Decrypting
-		PROCESSING		= DownloadStatus.Processing
-		ONLINE			= DownloadStatus.Online
-		OFFLINE			= DownloadStatus.Offline
-		QUEUED			= DownloadStatus.Queued
-		SKIPPED			= DownloadStatus.Skipped
-		WAITING			= DownloadStatus.Waiting
-		DOWNLOADING		= DownloadStatus.Downloading
-		FAILED			= DownloadStatus.Failed
-		ABORTED			= DownloadStatus.Aborted
-		FINISHED		= DownloadStatus.Finished
-		TEMP_OFFLINE	= DownloadStatus.TempOffline
-		CUSTOM			= DownloadStatus.Custom
-		UNKNOWN			= DownloadStatus.Unknown
+		# STARTING		= DownloadStatus.Starting
+		# DECRYPTING		= DownloadStatus.Decrypting
+		# PROCESSING		= DownloadStatus.Processing
+		# ONLINE			= DownloadStatus.Online
+		# OFFLINE			= DownloadStatus.Offline
+		# QUEUED			= DownloadStatus.Queued
+		# SKIPPED			= DownloadStatus.Skipped
+		# WAITING			= DownloadStatus.Waiting
+		# DOWNLOADING		= DownloadStatus.Downloading
+		# FAILED			= DownloadStatus.Failed
+		# ABORTED			= DownloadStatus.Aborted
+		# FINISHED		= DownloadStatus.Finished
+		# TEMP_OFFLINE	= DownloadStatus.TempOffline
+		# CUSTOM			= DownloadStatus.Custom
+		# UNKNOWN			= DownloadStatus.Unknown
+		STARTING		= 0
+		DECRYPTING		= 0
+		PROCESSING		= 0
+		ONLINE			= 0
+		OFFLINE			= 0
+		QUEUED			= 0
+		SKIPPED			= 0
+		WAITING			= 0
+		DOWNLOADING		= 0
+		FAILED			= 0
+		ABORTED			= 0
+		FINISHED		= 0
+		TEMP_OFFLINE	= 0
+		CUSTOM			= 0
+		UNKNOWN			= 0
 		
 		_STATUS_STR = {
 			STARTING: "Starting",

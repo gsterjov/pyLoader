@@ -9,9 +9,9 @@ class PermissionDenied (Exception):
 	pass
 
 
-class WebsocketBackend (object):
+class WebsocketClient (object):
 	'''
-	The websocket backend that will carry across requests and responses
+	The websocket client that will carry across requests and responses
 	from/to the client and pyload server.
 	'''
 
@@ -50,7 +50,7 @@ class WebsocketBackend (object):
 
 		# handle error responses
 		if code == 400: raise result
-		elif code == 404: raise AttributeError ("Invalid API Call")
+		elif code == 404: raise AttributeError ("Invalid API Call: {0}".format(request))
 		elif code == 500: raise Exception ("Server Exception: {0}".format(result))
 		elif code == 401: raise Unauthorised()
 		elif code == 403: raise PermissionDenied()

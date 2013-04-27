@@ -130,7 +130,10 @@ class MainWindow (object):
 
 	def __load (self):
 		if self.connect_window.auto_connect:
-			self.connect_window.connect()
+			try:
+				self.connect_window.connect()
+			except:
+				print "connection failed"
 
 
 	def __on_close (self, window, event):
