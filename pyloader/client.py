@@ -18,11 +18,7 @@
 
 import logging
 
-from pyload import Pyload
-
-from thrift.transport.TSocket import TSocket
-from thrift.transport.TTransport import TBufferedTransport
-from thrift.protocol.TBinaryProtocol import TBinaryProtocol
+from backends.websocket import WebsocketBackend
 
 from event import Event
 from live_property import live_property
@@ -77,6 +73,7 @@ class Client (object):
 		'''
 		Constructor
 		'''
+		self.backend = WebsocketBackend()
 		self.__connected = False
 		
 		self.on_connected = Event()
@@ -104,48 +101,43 @@ class Client (object):
 		self.port = port
 		self.username = username
 		self.password = password
-		
-		self.socket = TSocket (host, port)
-		self.transport = TBufferedTransport (self.socket)
-		self.protocol = TBinaryProtocol (self.transport)
-		self.client = Pyload.Client (self.protocol)
+
+		url = "ws://{0}:{1}/api".format (host, port)
 		
 		try:
-			self.transport.open()
-			self.__connected = True
+			self.backend.open (url)
 			logging.info ("Connected to {0}:{1}".format(host, port))
 		
 		except:
 			logging.warn ("Failed to connect to {0}:{1}".format(host, port))
 			raise ConnectionFailed
 		
-		if self.client.login (username, password):
-			logging.info ("Server version: {0}".format(self.version))
-			self.on_connected()
-			return True
-		
-		return False
-		
+
+		self.backend.login (username, password)
+		self.__connected = True
+
+		logging.info ("Server version: {0}".format(self.version))
+		self.on_connected()
+
+		return True
+
 
 	@login_required
 	def disconnect (self):
 		'''
 		Disconnect and release the resources from the backend
 		'''
-		self.transport.close()
+		self.backend.close()
+		logging.info ("Disconnected from {0}:{1}".format(self.host, self.port))
+
 		self.__connected = False
-		
-		self.client = None
-		self.protocol = None
-		self.transport = None
-		self.socket = None
-		
+
+		self.ws = None
 		self.host = None
 		self.port = None
 		self.username = None
 		self.password = None
 		
-		logging.info ("Disconnected from {0}:{1}".format(self.host, self.port))
 		self.on_disconnected()
 	
 	
