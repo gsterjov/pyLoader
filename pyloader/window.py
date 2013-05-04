@@ -178,6 +178,7 @@ class MainWindow (object):
 	
 	# Server events
 	def __on_connected (self):
+		print self.client.version
 		# display the server details
 		# self.space_status.set_text ("{0}".format(utils.format_size(self.client.free_space)))
 		

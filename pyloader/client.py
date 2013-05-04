@@ -86,7 +86,7 @@ class PyloadClientProtocol (WebSocketClientProtocol):
 	def onMessage (self, msg, binary):
 		code, result = json.loads (msg)
 
-		if code in [400, 404, 500, 401, 403]:
+		if not code == 200:
 			on_error (code, result)
 		
 		else:
@@ -119,20 +119,6 @@ class PyloadClientProtocol (WebSocketClientProtocol):
 
 		logging.debug ("Sending request to '{0}': {1}".format(self.factory.url, request))
 		self.sendMessage (request)
-
-		# response = self.socket.recv()
-		# logging.debug ("Received response: {0}".format(response))
-
-		# code, result = json.loads (response)
-
-		# # handle error responses
-		# if code == 400: raise result
-		# elif code == 404: raise AttributeError ("Invalid API Call: {0}".format(request))
-		# elif code == 500: raise Exception ("Server Exception: {0}".format(result))
-		# elif code == 401: raise Unauthorised()
-		# elif code == 403: raise PermissionDenied()
-
-		# return result
 
 
 
@@ -176,6 +162,17 @@ class Client (object):
 
 	def on_connection_message (self, message):
 		print message
+
+
+	def on_connection_error (self, code, error):
+		# handle error responses
+		if code == 400: raise result
+		elif code == 404: raise AttributeError ("Invalid API Call")
+		elif code == 500: raise Exception ("Server Exception: {0}".format(result))
+		elif code == 401: raise Unauthorised()
+		elif code == 403: raise PermissionDenied()
+
+		logging.warn ("Unknown server error occurred: ({0}) {1}".format(code, error))
 
 
 	def on_connection_ready (self, protocol):
@@ -282,7 +279,9 @@ class Client (object):
 		'''
 		Get the version of the server
 		'''
-		return self.client.getServerVersion()
+		self.api.send ("getServerVersion")
+		return 0
+		# return self.client.getServerVersion()
 	
 	@property
 	@login_required
