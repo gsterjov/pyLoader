@@ -45,7 +45,7 @@ setup(
 	],
 
 	entry_points = {
-		'console_scripts': ['pyloader = pyloader.window:start']
+		'console_scripts': ['pyloader = pyloader.application:start']
 	},
 
 	zip_safe = False,

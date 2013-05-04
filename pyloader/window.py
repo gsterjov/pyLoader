@@ -16,6 +16,8 @@
 #    along with pyLoader.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import logging
+
 from pkg_resources import Requirement, resource_filename
 from gi.repository import Gtk, Gdk, GLib, Gio, Notify
 
@@ -34,10 +36,11 @@ class MainWindow (object):
 	The main window
 	'''
 
-	def __init__ (self):
+	def __init__ (self, application):
 		'''
 		Constructor
 		'''
+		self.application = application
 		self.client = Client()
 
 		# load the application settings
@@ -130,10 +133,7 @@ class MainWindow (object):
 
 	def __load (self):
 		if self.connect_window.auto_connect:
-			try:
-				self.connect_window.connect()
-			except:
-				print "connection failed"
+			self.connect_window.connect()
 
 
 	def __on_close (self, window, event):
@@ -141,12 +141,14 @@ class MainWindow (object):
 			w, h = window.get_size()
 			self.settings.set_value ("window-size", GLib.Variant ('ai', [w, h]))
 
-			self.queue.save_state();
+			self.queue.save_state()
 
-			Gtk.main_quit()
+			from twisted.internet import reactor
+			reactor.stop()
 
 		except Exception as e:
-			Gtk.main_quit()
+			from twisted.internet import reactor
+			reactor.stop()
 			raise e
 
 
@@ -177,16 +179,17 @@ class MainWindow (object):
 	# Server events
 	def __on_connected (self):
 		# display the server details
-		self.space_status.set_text ("{0}".format(utils.format_size(self.client.free_space)))
+		# self.space_status.set_text ("{0}".format(utils.format_size(self.client.free_space)))
 		
-		self.server_status.set_text (self.client.host)
-		self.server_status_image.set_from_stock (Gtk.STOCK_YES, Gtk.IconSize.MENU)
+		# self.server_status.set_text (self.client.host)
+		# self.server_status_image.set_from_stock (Gtk.STOCK_YES, Gtk.IconSize.MENU)
 
-		self.start_button.set_sensitive (self.client.paused)
-		self.stop_button.set_sensitive (not self.client.paused)
+		# self.start_button.set_sensitive (self.client.paused)
+		# self.stop_button.set_sensitive (not self.client.paused)
 		
 		# periodically poll the client for any property changes
-		GLib.timeout_add (500, self.client.poll)
+		# GLib.timeout_add (500, self.client.poll)
+		pass
 	
 	
 	def __on_links_active_changed (self, prop, value):
@@ -216,8 +219,3 @@ class MainWindow (object):
 
 	def __on_show_captcha (self, notification, action, userdata):
 		self.window.present()
-	
-	
-def start():
-	main_window = MainWindow()
-	Gtk.main()

@@ -7,7 +7,7 @@
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
 #
-#    pyLoadGtk is distributed in the hope that it will be useful,
+#    pyLoader is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU General Public License for more details.
@@ -16,15 +16,20 @@
 #    along with pyLoader.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import json
 import logging
-
-from remote.websocket_client import WebsocketClient
 
 from event import Event
 from live_property import live_property
 from live_dict_property import live_dict_property
 
 from items import Package, Link, Download
+
+from gi.repository import GLib
+
+from twisted.internet import reactor
+from twisted.internet.endpoints import TCP4ClientEndpoint
+from autobahn.websocket import WebSocketClientFactory, WebSocketClientProtocol
 
 
 
@@ -52,7 +57,83 @@ class login_required (object):
 	
 	def __repr__ (self):
 		return self.func.__doc__
-	
+
+
+
+class PyloadClientFactory (WebSocketClientFactory):
+
+	def __init__ (self, username, password, *args, **kwargs):
+		self.username = username
+		self.password = password
+
+		WebSocketClientFactory.__init__ (self, *args, **kwargs)
+
+
+class PyloadClientProtocol (WebSocketClientProtocol):
+
+	on_error = None
+	on_ready = None
+	on_message = None
+
+
+	def __init__ (self):
+		self.ready = False
+		self.on_error = Event()
+		self.on_ready = Event()
+		self.on_message = Event()
+
+
+	def onMessage (self, msg, binary):
+		code, result = json.loads (msg)
+
+		if code in [400, 404, 500, 401, 403]:
+			on_error (code, result)
+		
+		else:
+			# assume we are trying to log in
+			if not self.ready:
+				self.ready = True
+				self.on_ready (self)
+			else:
+				self.on_message (msg)
+
+
+	def onOpen (self):
+		auth = [self.factory.username, self.factory.password]
+		request = json.dumps (["login", auth])
+		self.sendMessage (request)
+
+
+	def send (self, method, *args, **kwargs):
+		'''
+		Send a request to the pyload API. This will be sent
+		in the form of a JSON object with the method name and arguments
+		supplied.
+
+		param method The name of the API method to call
+		param *args Any arugments to pass to the API method
+		'''
+		if not self.ready: return
+
+		request = json.dumps ([method, args])
+
+		logging.debug ("Sending request to '{0}': {1}".format(self.factory.url, request))
+		self.sendMessage (request)
+
+		# response = self.socket.recv()
+		# logging.debug ("Received response: {0}".format(response))
+
+		# code, result = json.loads (response)
+
+		# # handle error responses
+		# if code == 400: raise result
+		# elif code == 404: raise AttributeError ("Invalid API Call: {0}".format(request))
+		# elif code == 500: raise Exception ("Server Exception: {0}".format(result))
+		# elif code == 401: raise Unauthorised()
+		# elif code == 403: raise PermissionDenied()
+
+		# return result
+
 
 
 class Client (object):
@@ -73,7 +154,9 @@ class Client (object):
 		'''
 		Constructor
 		'''
-		self.client = WebsocketClient()
+		self.api = None
+		self.pub = None
+
 		self.__connected = False
 		
 		self.on_connected = Event()
@@ -88,6 +171,39 @@ class Client (object):
 		]
 
 		self.tasks = {}
+		self.events = []
+
+
+	def on_connection_message (self, message):
+		print message
+
+
+	def on_connection_ready (self, protocol):
+		'''
+		The connection has been opened and is ready to receive messages
+		'''
+		logging.info ("Logged in to '{0}' as user '{1}'".format(protocol.factory.url, protocol.factory.username))
+
+		if not self.__connected and self.api.ready and self.pub.ready:
+			self.__connected = True
+			self.on_connected()
+
+
+	def on_new_connection (self, protocol):
+		'''
+		A new connection has been made to the pyload server.
+		This handles the protocol and makes it available for use to the entire client
+		'''
+		if protocol.factory.path == "/api":
+			logging.info ("Connected to API at '{0}'".format (protocol.factory.url))
+			self.api = protocol
+
+		elif protocol.factory.path == "/async":
+			logging.info ("Connected to publisher at '{0}'".format (protocol.factory.url))
+			self.pub = protocol
+
+		protocol.on_ready += self.on_connection_ready
+		protocol.on_message += self.on_connection_message
 
 
 
@@ -102,22 +218,33 @@ class Client (object):
 		self.username = username
 		self.password = password
 
+
+		# API connection
 		url = "ws://{0}:{1}/api".format (host, port)
-		
-		try:
-			self.client.open (url)
-			logging.info ("Connected to {0}:{1}".format(host, port))
-		
-		except:
-			logging.warn ("Failed to connect to {0}:{1}".format(host, port))
-			raise ConnectionFailed
-		
 
-		self.client.login (username, password)
-		self.__connected = True
+		# create protocol factory
+		factory = PyloadClientFactory (username, password, url)
+		factory.protocol = PyloadClientProtocol
 
-		logging.info ("Server version: {0}".format(self.version))
-		self.on_connected()
+		endpoint = TCP4ClientEndpoint (reactor, host, port)
+
+		d = endpoint.connect (factory)
+		d.addCallback (self.on_new_connection)
+		# d.addErrback (self.on_error)
+
+
+		# Publisher connection
+		url = "ws://{0}:{1}/async".format (host, port)
+
+		# create protocol factory
+		factory = PyloadClientFactory (username, password, url)
+		factory.protocol = PyloadClientProtocol
+
+		endpoint = TCP4ClientEndpoint (reactor, host, port)
+
+		d = endpoint.connect (factory)
+		d.addCallback (self.on_new_connection)
+		# d.addErrback (self.on_error)
 
 		return True
 
@@ -394,14 +521,14 @@ class Client (object):
 		Poll the backend server. This will check all the 'live' properties for
 		any changes and raise the property_changed event
 		'''
-		for prop in self.properties_to_poll:
-			prop.update()
+		# for prop in self.properties_to_poll:
+		# 	prop.update()
 		
-		self.collector.update()
-		self.queue.update()
-		self.downloads.update()
-		self.captchas.update()
+		# self.collector.update()
+		# self.queue.update()
+		# self.downloads.update()
+		# self.captchas.update()
 
-		self.poll_tasks()
+		# self.poll_tasks()
 		
 		return True
