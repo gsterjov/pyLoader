@@ -18,6 +18,7 @@
 
 import json
 import logging
+from collections import deque
 
 from event import Event
 from live_property import live_property
@@ -82,6 +83,8 @@ class PyloadClientProtocol (WebSocketClientProtocol):
 		self.on_ready = Event()
 		self.on_message = Event()
 
+		self.requests = deque([])
+
 
 	def onMessage (self, msg, binary):
 		code, result = json.loads (msg)
@@ -95,7 +98,8 @@ class PyloadClientProtocol (WebSocketClientProtocol):
 				self.ready = True
 				self.on_ready (self)
 			else:
-				self.on_message (msg)
+				request = self.requests.popleft()
+				self.on_message (msg, request)
 
 
 	def onOpen (self):
@@ -116,6 +120,7 @@ class PyloadClientProtocol (WebSocketClientProtocol):
 		if not self.ready: return
 
 		request = json.dumps ([method, args])
+		self.requests.append (request)
 
 		logging.debug ("Sending request to '{0}': {1}".format(self.factory.url, request))
 		self.sendMessage (request)
@@ -160,8 +165,8 @@ class Client (object):
 		self.events = []
 
 
-	def on_connection_message (self, message):
-		print message
+	def on_connection_message (self, message, request):
+		print request, message
 
 
 	def on_connection_error (self, code, error):
