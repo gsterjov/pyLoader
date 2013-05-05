@@ -21,6 +21,7 @@ import logging
 from collections import deque
 
 from event import Event
+from remote_property import remote_property
 from live_property import live_property
 from live_dict_property import live_dict_property
 
@@ -99,7 +100,7 @@ class PyloadClientProtocol (WebSocketClientProtocol):
 				self.on_ready (self)
 			else:
 				request = self.requests.popleft()
-				self.on_message (msg, request)
+				self.on_message (json.loads(msg)[1], json.loads(request))
 
 
 	def onOpen (self):
@@ -166,7 +167,8 @@ class Client (object):
 
 
 	def on_connection_message (self, message, request):
-		print request, message
+		if request[0] == "getServerVersion":
+			self.version.update (message)
 
 
 	def on_connection_error (self, code, error):
@@ -278,15 +280,15 @@ class Client (object):
 		return self.__connected
 		
 	
-	@property
-	@login_required
-	def version (self):
+	@remote_property
+	def version (self, data=None):
 		'''
 		Get the version of the server
 		'''
-		self.api.send ("getServerVersion")
-		return 0
-		# return self.client.getServerVersion()
+		if not data:
+			self.api.send ("getServerVersion")
+		else:
+			return data
 	
 	@property
 	@login_required

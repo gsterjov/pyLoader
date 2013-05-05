@@ -104,6 +104,8 @@ class MainWindow (object):
 		
 		# connect to server events
 		self.client.on_connected += self.__on_connected
+
+		self.client.version.changed += self._on_server_details
 		
 		self.client.speed.changed += self.__on_speed_changed
 		self.client.links_active.changed += self.__on_links_active_changed
@@ -178,7 +180,7 @@ class MainWindow (object):
 	
 	# Server events
 	def __on_connected (self):
-		print self.client.version
+		self.client.version.update()
 		# display the server details
 		# self.space_status.set_text ("{0}".format(utils.format_size(self.client.free_space)))
 		
@@ -191,6 +193,11 @@ class MainWindow (object):
 		# periodically poll the client for any property changes
 		# GLib.timeout_add (500, self.client.poll)
 		pass
+
+
+	def _on_server_details (self, prop, value):
+		if prop.func_name == 'version':
+			logging.info ("Server version: {0}".format(value))
 	
 	
 	def __on_links_active_changed (self, prop, value):
