@@ -95,6 +95,8 @@ class Queue (object):
 		selection.connect ("changed", self.__on_selection_changed)
 
 		# connect to client property events
+		client.on_connected += self.__on_connected
+
 		client.queue.added += self.__on_queue_added
 		client.queue.changed += self.__on_queue_changed
 		client.downloads.changed += self.__on_downloads_changed
@@ -239,6 +241,10 @@ class Queue (object):
 		if item1.order < item2.order: return -1
 		elif item1.order == item2.order: return 0
 		else: return 1
+
+
+	def __on_connected (self):
+		self.client.request_queue_update()
 
 	
 	def __on_queue_added (self, prop, package):

@@ -23,7 +23,8 @@ from remote_property import remote_property
 from live_property import LiveProperty, live_property
 from live_dict_property import live_dict_property
 
-from items import Package, Link, Download
+# from items import Package, Link, Download
+from package import Package
 
 from gi.repository import GLib
 
@@ -41,22 +42,52 @@ class LoginRequired (Exception):
 
 
 
-class login_required (object):
+class PackageQueue (object):
 	'''
-	Decorator which ensures that the client is currently logged into the backend
-	server, otherwise raise a LoginRequired exception
+	A simple package queue that raises events when its modified.
 	'''
-	def __init__ (self, func):
-		self.func = func
-	
-	def __call__ (self, instance, *args, **kwargs):
-		if instance.connected:
-			return self.func (instance, *args, **kwargs)
-		
-		raise LoginRequired
-	
-	def __repr__ (self):
-		return self.func.__doc__
+
+	def __init__ (self):
+		self.queue = {}
+
+
+	def add (self, item):
+		'''
+		Add a package to the queue
+		'''
+		if not self.queue.has_key (item.id):
+			self.queue[item.id] = item
+		else:
+			raise Exception ("Package item already exists")
+
+
+	def remove (self, pid):
+		'''
+		Remove a package from the queue
+		'''
+		if self.queue.has_key (pid):
+			item = self.queue[pid]
+			del self.queue[pid]
+			return item
+		else:
+			raise KeyError()
+
+
+	def update (self, pid, item):
+		'''
+		Update an existing package in the queue
+		'''
+		if self.queue.has_key (pid):
+			self.queue[pid].parse (item)
+		else:
+			raise KeyError()
+
+
+	def exists (self, pid):
+		'''
+		Check to see if the package already exists in the queue
+		'''
+		return self.queue.has_key (pid)
 
 
 
@@ -93,14 +124,7 @@ class Client (object):
 		self.links_queued = LiveProperty ("links_queued")
 		self.links_total = LiveProperty ("links_total")
 
-
-		# set all live properties in this class for polling
-		self.properties_to_poll = [
-			self.links_active,
-			self.links_waiting,
-			self.links_total,
-			self.speed,
-		]
+		self.packages = PackageQueue()
 
 		self.tasks = {}
 		self.events = []
@@ -149,7 +173,6 @@ class Client (object):
 		return True
 
 
-	@login_required
 	def disconnect (self):
 		'''
 		Disconnect and release the resources from the backend
@@ -174,72 +197,10 @@ class Client (object):
 		Whether or not the client is connected to a server
 		'''
 		return self.__connected
-		
-	
-	# @remote_property("getServerVersion")
-	# def version (self, data=None):
-	# 	'''
-	# 	Get the version of the server
-	# 	'''
-	# 	print data
-	# 	return data
-		# if not data:
-		# 	self.api.send ("getServerVersion")
-		# else:
-		# 	return data
-	
-	# @remote_property
-	# def free_space (self, data=None):
-	# 	'''
-	# 	The amount of free space in the download directory
-	# 	'''
-	# 	if not data:
-	# 		self.api.send ("freeSpace")
-	# 	else:
-	# 		return data
-
-
-	def request_server_status (self, data=None):
-		self.api.send ("getServerVersion")
-		self.api.send ("freeSpace")
-		self.api.send ("getServerStatus")
-			# update the various properties
-			# self.links_total.update (data['linkstotal'])
-			# self.links_waiting.update (data['linksqueue'])
-			# {u'linksqueue': 0, u'paused': True, u'notifications': False, u'sizetotal': 0, u'reconnect': False, u'download': False, u'linkstotal': 0, u'speed': 0, u'sizequeue': 0, u'@class': u'ServerStatus'}
 	
 
-	@remote_property
-	def links_active (self, data=None):
-		'''
-		The amount of links currently active
-		'''
-		if not data:
-			self.api.send ("getServerStatus")
-		else:
-			print data
-			return data
-	
-	@live_property
-	@login_required
-	def links_waiting (self):
-		'''
-		The amount of links currently waiting
-		'''
-		status = self.client.getServerStatus()
-		return status['linksqueue']
-	
-	@live_property
-	@login_required
-	def links_total (self):
-		'''
-		The total amount of links in the queue
-		'''
-		status = self.client.getServerStatus()
-		return status['linkstotal']
-	
-	@live_property
-	@login_required
+
+	@property
 	def speed (self):
 		'''
 		The current download speed in bytes
@@ -248,7 +209,6 @@ class Client (object):
 		return status['speed']
 	
 	@property
-	@login_required
 	def paused (self):
 		'''
 		Whether or not the queue is currently paused
@@ -257,7 +217,6 @@ class Client (object):
 		return status['paused']
 	
 	@property
-	@login_required
 	def download_enabled (self):
 		'''
 		Whether or not downloading is enabled
@@ -266,7 +225,6 @@ class Client (object):
 		return status['download']
 	
 	@property
-	@login_required
 	def reconnect_enabled (self):
 		'''
 		Whether or not the downloader will reconnect when needed
@@ -275,7 +233,7 @@ class Client (object):
 		return status['reconnect']
 	
 	
-	@login_required
+
 	def get_user_details (self):
 		'''
 		Get the details of the currently logged in user
@@ -291,30 +249,30 @@ class Client (object):
 		'''
 		self.api.send ("pauseServer")
 	
-	@login_required
+
 	def resume (self):
 		'''
 		Resume the current queue
 		'''
-		self.client.unpauseServer()
+		self.api.send ("unpauseServer")
 	
-	
-	@live_property
-	@login_required
-	def collector (self):
-		'''
-		A dict of packages currently in the collector
-		'''
-		packages = {}
-		
-		for item in self.client.getCollectorData():
-			packages[item.pid] = Package (item)
 
-		return packages
-	
+
+	def request_server_status (self):
+		'''
+		Send a request for server status details.
+		The appropriate properties will be updated as a result.
+		'''
+		self.api.send ("getServerVersion")
+		self.api.send ("freeSpace")
+		self.api.send ("getServerStatus")
+
+
+	def request_queue_update (self):
+		self.api.send ("getAllFiles")
+
 	
 	@live_property
-	@login_required
 	def queue (self):
 		'''
 		A dict of packages currently in the queue
@@ -328,7 +286,6 @@ class Client (object):
 	
 	
 	@live_property
-	@login_required
 	def downloads (self):
 		'''
 		A dict of all active downloads
@@ -342,7 +299,6 @@ class Client (object):
 
 
 	@live_property
-	@login_required
 	def captchas (self):
 		'''
 		The current captcha tasks waiting to be actioned
@@ -451,24 +407,28 @@ class Client (object):
 		return True
 
 
-	def on_api_message (self, message, request):
+	def on_api_response (self, response, request):
 		'''
 		This is the server message receiver from API and publisher connections.
 		It will set the appropriate properties based on the request
 		attached to the message.
 		'''
-		print request, message
-
 		if request[0] == "getServerVersion":
-			self.version.update (message)
+			self.version.update (response)
 
 		elif request[0] == "freeSpace":
-			self.free_space.update (message)
+			self.free_space.update (response)
 
 		elif request[0] == "getServerStatus":
-			self.links_queued.update (message['linksqueue'])
-			self.links_total.update (message['linkstotal'])
-			# self.server_status.update (message)
+			self.links_queued.update (response['linksqueue'])
+			self.links_total.update (response['linkstotal'])
+
+		elif request[0] == "getAllFiles":
+			for pid, item in response["packages"].iteritems():
+				if self.packages.exists (pid):
+					self.packages.update (pid, item)
+				else:
+					self.packages.add (Package (item))
 
 
 	def on_publisher_event (self, event):
@@ -503,13 +463,14 @@ class Client (object):
 		This handles the protocol and makes it available for use to the entire client
 		'''
 		if protocol.factory.path == "/api":
-			logging.info ("Connected to API at '{0}'".format (protocol.factory.url))
 			self.api = protocol
 			protocol.on_response += self.on_api_response
+			logging.info ("Connected to API at '{0}'".format (protocol.factory.url))
 
 		elif protocol.factory.path == "/async":
-			logging.info ("Connected to publisher at '{0}'".format (protocol.factory.url))
 			self.pub = protocol
 			protocol.on_event += self.on_publisher_event
+			logging.info ("Connected to publisher at '{0}'".format (protocol.factory.url))
 
 		protocol.on_ready += self.on_connection_ready
+		protocol.on_error += self.on_connection_error

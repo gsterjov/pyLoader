@@ -62,7 +62,7 @@ class MainWindow (object):
 		
 		# create ui components
 		self.queue = Queue (builder, self.client)
-		self.collector = Collector (builder, self.client)
+		# self.collector = Collector (builder, self.client)
 		self.download_bar = DownloadBar (builder, self.client)
 
 
@@ -108,8 +108,8 @@ class MainWindow (object):
 		self.client.version.changed += self._on_server_details
 		self.client.free_space.changed += self._on_server_details
 
-		self.client.links_active.changed += self.__on_links_active_changed
-		self.client.links_waiting.changed += self.__on_links_waiting_changed
+		# self.client.links_active.changed += self.__on_links_active_changed
+		# self.client.links_waiting.changed += self.__on_links_waiting_changed
 		
 		# self.client.speed.changed += self.__on_speed_changed
 		# self.client.links_active.changed += self.__on_links_active_changed
