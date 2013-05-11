@@ -16,13 +16,11 @@
 #    along with pyLoader.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import json
 import logging
-from collections import deque
 
 from event import Event
 from remote_property import remote_property
-from live_property import live_property
+from live_property import LiveProperty, live_property
 from live_dict_property import live_dict_property
 
 from items import Package, Link, Download
@@ -31,7 +29,7 @@ from gi.repository import GLib
 
 from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ClientEndpoint
-from autobahn.websocket import WebSocketClientFactory, WebSocketClientProtocol
+from protocols import PyloadAPIFactory, PyloadEventFactory, PyloadAPIProtocol, PyloadEventProtocol
 
 
 
@@ -62,72 +60,6 @@ class login_required (object):
 
 
 
-class PyloadClientFactory (WebSocketClientFactory):
-
-	def __init__ (self, username, password, *args, **kwargs):
-		self.username = username
-		self.password = password
-
-		WebSocketClientFactory.__init__ (self, *args, **kwargs)
-
-
-class PyloadClientProtocol (WebSocketClientProtocol):
-
-	on_error = None
-	on_ready = None
-	on_message = None
-
-
-	def __init__ (self):
-		self.ready = False
-		self.on_error = Event()
-		self.on_ready = Event()
-		self.on_message = Event()
-
-		self.requests = deque([])
-
-
-	def onMessage (self, msg, binary):
-		code, result = json.loads (msg)
-
-		if not code == 200:
-			on_error (code, result)
-		
-		else:
-			# assume we are trying to log in
-			if not self.ready:
-				self.ready = True
-				self.on_ready (self)
-			else:
-				request = self.requests.popleft()
-				self.on_message (json.loads(msg)[1], json.loads(request))
-
-
-	def onOpen (self):
-		auth = [self.factory.username, self.factory.password]
-		request = json.dumps (["login", auth])
-		self.sendMessage (request)
-
-
-	def send (self, method, *args, **kwargs):
-		'''
-		Send a request to the pyload API. This will be sent
-		in the form of a JSON object with the method name and arguments
-		supplied.
-
-		param method The name of the API method to call
-		param *args Any arugments to pass to the API method
-		'''
-		if not self.ready: return
-
-		request = json.dumps ([method, args])
-		self.requests.append (request)
-
-		logging.debug ("Sending request to '{0}': {1}".format(self.factory.url, request))
-		self.sendMessage (request)
-
-
-
 class Client (object):
 	'''
 	This class handles all communication to and from the backend pyLoad server
@@ -138,6 +70,7 @@ class Client (object):
 		on_disconnected: Raised when the connection has been severed
 	'''
 	
+	on_event = None
 	on_connected = None
 	on_disconnected = None
 	
@@ -151,9 +84,16 @@ class Client (object):
 
 		self.__connected = False
 		
+		self.on_event = Event()
 		self.on_connected = Event()
 		self.on_disconnected = Event()
-		
+
+		self.version = LiveProperty ("version")
+		self.free_space = LiveProperty ("free_space")
+		self.links_queued = LiveProperty ("links_queued")
+		self.links_total = LiveProperty ("links_total")
+
+
 		# set all live properties in this class for polling
 		self.properties_to_poll = [
 			self.links_active,
@@ -164,50 +104,6 @@ class Client (object):
 
 		self.tasks = {}
 		self.events = []
-
-
-	def on_connection_message (self, message, request):
-		if request[0] == "getServerVersion":
-			self.version.update (message)
-
-
-	def on_connection_error (self, code, error):
-		# handle error responses
-		if code == 400: raise result
-		elif code == 404: raise AttributeError ("Invalid API Call")
-		elif code == 500: raise Exception ("Server Exception: {0}".format(result))
-		elif code == 401: raise Unauthorised()
-		elif code == 403: raise PermissionDenied()
-
-		logging.warn ("Unknown server error occurred: ({0}) {1}".format(code, error))
-
-
-	def on_connection_ready (self, protocol):
-		'''
-		The connection has been opened and is ready to receive messages
-		'''
-		logging.info ("Logged in to '{0}' as user '{1}'".format(protocol.factory.url, protocol.factory.username))
-
-		if not self.__connected and self.api.ready and self.pub.ready:
-			self.__connected = True
-			self.on_connected()
-
-
-	def on_new_connection (self, protocol):
-		'''
-		A new connection has been made to the pyload server.
-		This handles the protocol and makes it available for use to the entire client
-		'''
-		if protocol.factory.path == "/api":
-			logging.info ("Connected to API at '{0}'".format (protocol.factory.url))
-			self.api = protocol
-
-		elif protocol.factory.path == "/async":
-			logging.info ("Connected to publisher at '{0}'".format (protocol.factory.url))
-			self.pub = protocol
-
-		protocol.on_ready += self.on_connection_ready
-		protocol.on_message += self.on_connection_message
 
 
 
@@ -227,8 +123,8 @@ class Client (object):
 		url = "ws://{0}:{1}/api".format (host, port)
 
 		# create protocol factory
-		factory = PyloadClientFactory (username, password, url)
-		factory.protocol = PyloadClientProtocol
+		factory = PyloadAPIFactory (username, password, url)
+		factory.protocol = PyloadAPIProtocol
 
 		endpoint = TCP4ClientEndpoint (reactor, host, port)
 
@@ -241,8 +137,8 @@ class Client (object):
 		url = "ws://{0}:{1}/async".format (host, port)
 
 		# create protocol factory
-		factory = PyloadClientFactory (username, password, url)
-		factory.protocol = PyloadClientProtocol
+		factory = PyloadEventFactory (username, password, url)
+		factory.protocol = PyloadEventProtocol
 
 		endpoint = TCP4ClientEndpoint (reactor, host, port)
 
@@ -280,33 +176,49 @@ class Client (object):
 		return self.__connected
 		
 	
+	# @remote_property("getServerVersion")
+	# def version (self, data=None):
+	# 	'''
+	# 	Get the version of the server
+	# 	'''
+	# 	print data
+	# 	return data
+		# if not data:
+		# 	self.api.send ("getServerVersion")
+		# else:
+		# 	return data
+	
+	# @remote_property
+	# def free_space (self, data=None):
+	# 	'''
+	# 	The amount of free space in the download directory
+	# 	'''
+	# 	if not data:
+	# 		self.api.send ("freeSpace")
+	# 	else:
+	# 		return data
+
+
+	def request_server_status (self, data=None):
+		self.api.send ("getServerVersion")
+		self.api.send ("freeSpace")
+		self.api.send ("getServerStatus")
+			# update the various properties
+			# self.links_total.update (data['linkstotal'])
+			# self.links_waiting.update (data['linksqueue'])
+			# {u'linksqueue': 0, u'paused': True, u'notifications': False, u'sizetotal': 0, u'reconnect': False, u'download': False, u'linkstotal': 0, u'speed': 0, u'sizequeue': 0, u'@class': u'ServerStatus'}
+	
+
 	@remote_property
-	def version (self, data=None):
-		'''
-		Get the version of the server
-		'''
-		if not data:
-			self.api.send ("getServerVersion")
-		else:
-			return data
-	
-	@property
-	@login_required
-	def free_space (self):
-		'''
-		The amount of free space in the download directory
-		'''
-		return self.client.freeSpace()
-	
-	@live_property
-	@login_required
-	def links_active (self):
+	def links_active (self, data=None):
 		'''
 		The amount of links currently active
 		'''
-		status = self.client.getServerStatus()
-		return 0
-		# return status['active']
+		if not data:
+			self.api.send ("getServerStatus")
+		else:
+			print data
+			return data
 	
 	@live_property
 	@login_required
@@ -372,13 +284,12 @@ class Client (object):
 		return {'name': data.name, 'email': data.email, 'role': data.role, 'permission': data.permission}
 	
 	
-	@login_required
 	def pause (self):
 		'''
 		Pause the current queue. This will only stop processing of the queue,
 		any links downloading will continue to do so
 		'''
-		self.client.pauseServer()
+		self.api.send ("pauseServer")
 	
 	@login_required
 	def resume (self):
@@ -538,3 +449,67 @@ class Client (object):
 		# self.poll_tasks()
 		
 		return True
+
+
+	def on_api_message (self, message, request):
+		'''
+		This is the server message receiver from API and publisher connections.
+		It will set the appropriate properties based on the request
+		attached to the message.
+		'''
+		print request, message
+
+		if request[0] == "getServerVersion":
+			self.version.update (message)
+
+		elif request[0] == "freeSpace":
+			self.free_space.update (message)
+
+		elif request[0] == "getServerStatus":
+			self.links_queued.update (message['linksqueue'])
+			self.links_total.update (message['linkstotal'])
+			# self.server_status.update (message)
+
+
+	def on_publisher_event (self, event):
+		print event
+
+
+	def on_connection_error (self, code, error):
+		# handle error responses
+		if code == 400: raise result
+		elif code == 404: raise AttributeError ("Invalid API Call")
+		elif code == 500: raise Exception ("Server Exception: {0}".format(result))
+		elif code == 401: raise Unauthorised()
+		elif code == 403: raise PermissionDenied()
+
+		logging.warn ("Unknown server error occurred: ({0}) {1}".format(code, error))
+
+
+	def on_connection_ready (self, protocol):
+		'''
+		The connection has been opened and is ready to receive messages
+		'''
+		logging.info ("Logged in to '{0}' as user '{1}'".format(protocol.factory.url, protocol.factory.username))
+
+		if not self.__connected and self.api.ready and self.pub.ready:
+			self.__connected = True
+			self.on_connected()
+
+
+	def on_new_connection (self, protocol):
+		'''
+		A new connection has been made to the pyload server.
+		This handles the protocol and makes it available for use to the entire client
+		'''
+		if protocol.factory.path == "/api":
+			logging.info ("Connected to API at '{0}'".format (protocol.factory.url))
+			self.api = protocol
+			protocol.on_response += self.on_api_response
+
+		elif protocol.factory.path == "/async":
+			logging.info ("Connected to publisher at '{0}'".format (protocol.factory.url))
+			self.pub = protocol
+			protocol.on_event += self.on_publisher_event
+
+		protocol.on_ready += self.on_connection_ready

@@ -106,10 +106,14 @@ class MainWindow (object):
 		self.client.on_connected += self.__on_connected
 
 		self.client.version.changed += self._on_server_details
-		
-		self.client.speed.changed += self.__on_speed_changed
+		self.client.free_space.changed += self._on_server_details
+
 		self.client.links_active.changed += self.__on_links_active_changed
 		self.client.links_waiting.changed += self.__on_links_waiting_changed
+		
+		# self.client.speed.changed += self.__on_speed_changed
+		# self.client.links_active.changed += self.__on_links_active_changed
+		# self.client.links_waiting.changed += self.__on_links_waiting_changed
 
 		self.client.captchas.added += self.__on_captcha_added
 
@@ -180,12 +184,16 @@ class MainWindow (object):
 	
 	# Server events
 	def __on_connected (self):
-		self.client.version.update()
+		self.client.pause()
+		self.client.request_server_status()
+		# self.client.version.update()
+		# self.client.free_space.update()
+		# self.client.links_active.update()
 		# display the server details
 		# self.space_status.set_text ("{0}".format(utils.format_size(self.client.free_space)))
 		
-		# self.server_status.set_text (self.client.host)
-		# self.server_status_image.set_from_stock (Gtk.STOCK_YES, Gtk.IconSize.MENU)
+		self.server_status.set_text (self.client.host)
+		self.server_status_image.set_from_stock (Gtk.STOCK_YES, Gtk.IconSize.MENU)
 
 		# self.start_button.set_sensitive (self.client.paused)
 		# self.stop_button.set_sensitive (not self.client.paused)
@@ -196,8 +204,14 @@ class MainWindow (object):
 
 
 	def _on_server_details (self, prop, value):
-		if prop.func_name == 'version':
+		if prop == 'version':
 			logging.info ("Server version: {0}".format(value))
+
+		elif prop == 'free_space':
+			self.space_status.set_text ("{0}".format(utils.format_size(value)))
+
+		elif prop == 'links_queued':
+			self.queue_status.set_text ("{0}/{1}".format(0, value))
 	
 	
 	def __on_links_active_changed (self, prop, value):
